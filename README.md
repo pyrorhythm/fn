@@ -85,8 +85,8 @@ Or use `ErrFunc` for simple cases:
 
 ```go
 fn.RunOps(
-    fn.ErrFunc(func() error { return step1() }),
-    fn.ErrFunc(func() error { return step2() }),
+    fn.FuncErr(func() error { return step1() }),
+    fn.FuncErr(func() error { return step2() }),
 )
 ```
 

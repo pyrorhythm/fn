@@ -19,17 +19,17 @@ type (
 		runnable
 	}
 
-	// ErrFunc is a simple adapter for func() error to [runnable] and [rollbackable]
-	ErrFunc func() error
+	// FuncErr is a simple adapter for func() error to [runnable] and [rollbackable]
+	FuncErr func() error
 )
 
 // Run implements [runnable]
-func (ef ErrFunc) Run() error {
+func (ef FuncErr) Run() error {
 	return ef()
 }
 
 // Rollback implements [rollbackable]
-func (ef ErrFunc) Rollback() error {
+func (ef FuncErr) Rollback() error {
 	return ef()
 }
 

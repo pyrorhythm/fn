@@ -7,9 +7,9 @@ import (
 
 func TestRunOps_AllSuccess(t *testing.T) {
 	var calls []int
-	op1 := ErrFunc(func() error { calls = append(calls, 1); return nil })
-	op2 := ErrFunc(func() error { calls = append(calls, 2); return nil })
-	op3 := ErrFunc(func() error { calls = append(calls, 3); return nil })
+	op1 := FuncErr(func() error { calls = append(calls, 1); return nil })
+	op2 := FuncErr(func() error { calls = append(calls, 2); return nil })
+	op3 := FuncErr(func() error { calls = append(calls, 3); return nil })
 
 	err := RunOps(op1, op2, op3)
 	if err != nil {
@@ -28,9 +28,9 @@ func TestRunOps_AllSuccess(t *testing.T) {
 func TestRunOps_StopsOnError(t *testing.T) {
 	var calls []int
 	testErr := errors.New("op2 failed")
-	op1 := ErrFunc(func() error { calls = append(calls, 1); return nil })
-	op2 := ErrFunc(func() error { calls = append(calls, 2); return testErr })
-	op3 := ErrFunc(func() error { calls = append(calls, 3); return nil })
+	op1 := FuncErr(func() error { calls = append(calls, 1); return nil })
+	op2 := FuncErr(func() error { calls = append(calls, 2); return testErr })
+	op3 := FuncErr(func() error { calls = append(calls, 3); return nil })
 
 	err := RunOps(op1, op2, op3)
 	if err != testErr {
@@ -187,9 +187,9 @@ func TestTransactOps_Empty(t *testing.T) {
 	}
 }
 
-func TestErrFunc_Run(t *testing.T) {
+func TestFuncErr_Run(t *testing.T) {
 	called := false
-	ef := ErrFunc(func() error { called = true; return nil })
+	ef := FuncErr(func() error { called = true; return nil })
 	err := ef.Run()
 	if err != nil {
 		t.Errorf("expected nil, got %v", err)
@@ -199,9 +199,9 @@ func TestErrFunc_Run(t *testing.T) {
 	}
 }
 
-func TestErrFunc_Rollback(t *testing.T) {
+func TestFuncErr_Rollback(t *testing.T) {
 	called := false
-	ef := ErrFunc(func() error { called = true; return nil })
+	ef := FuncErr(func() error { called = true; return nil })
 	err := ef.Rollback()
 	if err != nil {
 		t.Errorf("expected nil, got %v", err)
