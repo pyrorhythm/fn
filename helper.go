@@ -24,6 +24,8 @@ func ValidReflect[T any](v T) bool {
 		return m.Validate() == nil
 	case interface{ Validate() bool }:
 		return m.Validate()
+	case interface{ Valid() bool }:
+		return m.Valid()
 	case interface{ IsZero() bool }:
 		return !m.IsZero()
 	}
@@ -57,3 +59,19 @@ func Or[T any](p *T, v T) T {
 func OrZero[T any](p *T) T {
 	return Or(p, *new(T))
 }
+
+func Is[T any](v any) bool {
+	_, ok := v.(T)
+	return ok
+}
+
+func Cast[T any](v any) T {
+	t, ok := v.(T)
+	if !ok {
+		return Z[T]()
+	}
+	return t
+}
+
+// Z ...wait... OH! It's Zero Value!
+func Z[T any]() T { return *new(T) }

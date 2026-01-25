@@ -73,8 +73,8 @@ func TestOption_UnmarshalJSON_Valid(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("expected valid option")
 	}
-	if opt.Value() != 42 {
-		t.Errorf("expected 42, got %d", opt.Value())
+	if opt.Val() != 42 {
+		t.Errorf("expected 42, got %d", opt.Val())
 	}
 }
 
@@ -102,8 +102,8 @@ func TestOption_UnmarshalJSON_String(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("expected valid option")
 	}
-	if opt.Value() != "hello" {
-		t.Errorf("expected 'hello', got %q", opt.Value())
+	if opt.Val() != "hello" {
+		t.Errorf("expected 'hello', got %q", opt.Val())
 	}
 }
 
@@ -122,8 +122,8 @@ func TestOption_UnmarshalJSON_Struct(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("expected valid option")
 	}
-	if opt.Value().Name != "Alice" || opt.Value().Age != 30 {
-		t.Errorf("expected {Alice, 30}, got %+v", opt.Value())
+	if opt.Val().Name != "Alice" || opt.Val().Age != 30 {
+		t.Errorf("expected {Alice, 30}, got %+v", opt.Val())
 	}
 }
 
@@ -155,8 +155,8 @@ func TestOption_JSON_Roundtrip_Valid(t *testing.T) {
 	if original.Valid() != restored.Valid() {
 		t.Errorf("Valid mismatch: %v vs %v", original.Valid(), restored.Valid())
 	}
-	if original.Value() != restored.Value() {
-		t.Errorf("Value mismatch: %v vs %v", original.Value(), restored.Value())
+	if original.Val() != restored.Val() {
+		t.Errorf("Value mismatch: %v vs %v", original.Val(), restored.Val())
 	}
 }
 

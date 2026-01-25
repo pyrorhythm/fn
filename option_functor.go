@@ -10,14 +10,14 @@ func OptTo[T, U any](o Option[T], tf ...func(T) U) Option[U] {
 	if len(tf) == 0 {
 		return Nil[U]()
 	}
-	return some(tf[0](o.Value()))
+	return some(tf[0](o.Val()))
 }
 
 // OptMorph casts [Option] of type T to type U using func(T) [Option][U].
 // If [Option][T] is invalid, func(T) [Option][U] would not be called.
 func OptMorph[T, U any](o Option[T], f func(T) Option[U]) Option[U] {
 	if o.Valid() {
-		return f(o.Value())
+		return f(o.Val())
 	}
 	return Nil[U]()
 }
