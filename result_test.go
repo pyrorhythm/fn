@@ -225,8 +225,8 @@ func TestResult_Opt(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("Opt() should be valid for OK result")
 	}
-	if opt.Value() != 42 {
-		t.Errorf("expected 42, got %d", opt.Value())
+	if opt.Val() != 42 {
+		t.Errorf("expected 42, got %d", opt.Val())
 	}
 }
 

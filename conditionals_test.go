@@ -31,8 +31,8 @@ func TestFlatIf_True(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("FlatIf(true, ...) should be valid")
 	}
-	if opt.Value() != 42 {
-		t.Errorf("expected 42, got %d", opt.Value())
+	if opt.Val() != 42 {
+		t.Errorf("expected 42, got %d", opt.Val())
 	}
 }
 
@@ -41,8 +41,8 @@ func TestFlatIf_False(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("FlatIf(false, ...) should be valid")
 	}
-	if opt.Value() != 99 {
-		t.Errorf("expected 99, got %d", opt.Value())
+	if opt.Val() != 99 {
+		t.Errorf("expected 99, got %d", opt.Val())
 	}
 }
 
@@ -73,8 +73,8 @@ func TestIfPtr_TrueUsesValue(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("should be valid")
 	}
-	if opt.Value() != 42 {
-		t.Errorf("expected 42, got %d", opt.Value())
+	if opt.Val() != 42 {
+		t.Errorf("expected 42, got %d", opt.Val())
 	}
 }
 
@@ -84,8 +84,8 @@ func TestIfPtr_FalseUsesPointer(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("should be valid (pointer not nil)")
 	}
-	if opt.Value() != 99 {
-		t.Errorf("expected 99, got %d", opt.Value())
+	if opt.Val() != 99 {
+		t.Errorf("expected 99, got %d", opt.Val())
 	}
 }
 
@@ -103,8 +103,8 @@ func TestPtrIf_TrueUsesPointer(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("should be valid")
 	}
-	if opt.Value() != 42 {
-		t.Errorf("expected 42, got %d", opt.Value())
+	if opt.Val() != 42 {
+		t.Errorf("expected 42, got %d", opt.Val())
 	}
 }
 
@@ -122,7 +122,7 @@ func TestPtrIf_FalseUsesValue(t *testing.T) {
 	if !opt.Valid() {
 		t.Error("should be valid")
 	}
-	if opt.Value() != 99 {
-		t.Errorf("expected 99, got %d", opt.Value())
+	if opt.Val() != 99 {
+		t.Errorf("expected 99, got %d", opt.Val())
 	}
 }

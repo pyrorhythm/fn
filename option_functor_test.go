@@ -11,8 +11,8 @@ func TestOptTo_Valid(t *testing.T) {
 	if !opt2.Valid() {
 		t.Error("OptTo on valid option should be valid")
 	}
-	if opt2.Value() != "42" {
-		t.Errorf("expected \"42\", got %q", opt2.Value())
+	if opt2.Val() != "42" {
+		t.Errorf("expected \"42\", got %q", opt2.Val())
 	}
 }
 
@@ -47,8 +47,8 @@ func TestOptTo_Chain(t *testing.T) {
 	if !opt3.Valid() {
 		t.Error("chained OptTo should be valid")
 	}
-	if opt3.Value() != 25 {
-		t.Errorf("expected 25, got %d", opt3.Value())
+	if opt3.Val() != 25 {
+		t.Errorf("expected 25, got %d", opt3.Val())
 	}
 }
 
@@ -69,8 +69,8 @@ func TestOptMorph_Valid(t *testing.T) {
 	if !opt2.Valid() {
 		t.Error("OptMorph on valid option should be valid")
 	}
-	if opt2.Value() != "42" {
-		t.Errorf("expected \"42\", got %q", opt2.Value())
+	if opt2.Val() != "42" {
+		t.Errorf("expected \"42\", got %q", opt2.Val())
 	}
 }
 
@@ -108,8 +108,8 @@ func TestOptMorph_Chain(t *testing.T) {
 	if !opt3.Valid() {
 		t.Error("chained OptMorph should be valid")
 	}
-	if opt3.Value() != "20" {
-		t.Errorf("expected \"20\", got %q", opt3.Value())
+	if opt3.Val() != "20" {
+		t.Errorf("expected \"20\", got %q", opt3.Val())
 	}
 }
 

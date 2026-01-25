@@ -5,7 +5,6 @@ type Option[T any] struct {
 	t T
 	v bool
 }
-
 type AnyOption = Option[any]
 
 func opt[T any](t T, b bool) Option[T] { return Option[T]{t, b} }
@@ -35,13 +34,22 @@ func (o Option[T]) into(d *T) { *d = o.t }
 // P.S. (it may be zero inside but it was nil on creation)
 func (o Option[T]) Valid() bool { return o.v }
 
-// Value returns held value in [Option]
-func (o Option[T]) Value() T { return o.t }
+// Val returns held value in [Option]
+func (o Option[T]) Val() T { return o.t }
 
-// Ptr returns pointer of held value in [Option].
-//
-// Always (i think (and pray)) non-nil.
-func (o Option[T]) Ptr() *T { return &o.t }
+// Ptr returns pointer equivalent of [Option].
+func (o Option[T]) Ptr() *T {
+	if !o.Valid() {
+		return nil
+	}
+
+	return &o.t
+}
+
+// RawPtr returns raw underlying pointer of [Option], no matter if it is valid or not.
+func (o Option[T]) RawPtr() *T {
+	return &o.t
+}
 
 // Any returns type-unsafe [Option]
 func (o Option[T]) Any() AnyOption { return AnyOption{o.t, o.v} }
