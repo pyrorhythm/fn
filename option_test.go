@@ -36,30 +36,30 @@ func TestSome_NonEmptyString(t *testing.T) {
 	}
 }
 
-func TestSomeP_ValidPointer(t *testing.T) {
+func TestSomePtr_ValidPointer(t *testing.T) {
 	v := 42
-	opt := SomeP(&v)
+	opt := SomePtr(&v)
 	if !opt.Valid() {
-		t.Error("SomeP(&v) should be valid")
+		t.Error("SomePtr(&v) should be valid")
 	}
 	if opt.Value() != 42 {
 		t.Errorf("expected 42, got %d", opt.Value())
 	}
 }
 
-func TestSomeP_NilPointer(t *testing.T) {
+func TestSomePtr_NilPointer(t *testing.T) {
 	var p *int
-	opt := SomeP(p)
+	opt := SomePtr(p)
 	if opt.Valid() {
-		t.Error("SomeP(nil) should not be valid")
+		t.Error("SomePtr(nil) should not be valid")
 	}
 }
 
-func TestSomeP_PointerToZero(t *testing.T) {
+func TestSomePtr_PointerToZero(t *testing.T) {
 	v := 0
-	opt := SomeP(&v)
+	opt := SomePtr(&v)
 	if !opt.Valid() {
-		t.Error("SomeP(&0) should be valid (pointer is non-nil)")
+		t.Error("SomePtr(&0) should be valid (pointer is non-nil)")
 	}
 	if opt.Value() != 0 {
 		t.Errorf("expected 0, got %d", opt.Value())

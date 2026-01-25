@@ -73,82 +73,82 @@ func TestFrom_WithError(t *testing.T) {
 	}
 }
 
-func TestFromA(t *testing.T) {
-	r := FromA([]int{1, 2, 3}, nil)
+func TestFromAny(t *testing.T) {
+	r := FromAny([]int{1, 2, 3}, nil)
 	if !r.OK() {
-		t.Error("FromA with non-nil slice should be OK")
+		t.Error("FromAny with non-nil slice should be OK")
 	}
 }
 
-func TestFromP_ValidPointer(t *testing.T) {
+func TestFromPtr_ValidPointer(t *testing.T) {
 	v := 42
-	r := FromP(&v, nil)
+	r := FromPtr(&v, nil)
 	if !r.OK() {
-		t.Error("FromP(&v, nil) should be OK")
+		t.Error("FromPtr(&v, nil) should be OK")
 	}
 	if r.Val() != 42 {
 		t.Errorf("expected 42, got %d", r.Val())
 	}
 }
 
-func TestFromP_NilPointer(t *testing.T) {
+func TestFromPtr_NilPointer(t *testing.T) {
 	var p *int
-	r := FromP(p, nil)
+	r := FromPtr(p, nil)
 	if r.OK() {
-		t.Error("FromP(nil, nil) should not be OK")
+		t.Error("FromPtr(nil, nil) should not be OK")
 	}
 }
 
-func TestFromAReflect_Slice(t *testing.T) {
-	r := FromAReflect([]int{1, 2, 3}, nil)
+func TestFromAnyReflect_Slice(t *testing.T) {
+	r := FromAnyReflect([]int{1, 2, 3}, nil)
 	if !r.OK() {
-		t.Error("FromAReflect with non-empty slice should be OK")
+		t.Error("FromAnyReflect with non-empty slice should be OK")
 	}
 }
 
-func TestFromAReflect_EmptySlice(t *testing.T) {
-	r := FromAReflect([]int{}, nil)
+func TestFromAnyReflect_EmptySlice(t *testing.T) {
+	r := FromAnyReflect([]int{}, nil)
 	if r.OK() {
-		t.Error("FromAReflect with empty slice should not be OK")
+		t.Error("FromAnyReflect with empty slice should not be OK")
 	}
 }
 
-func TestFromAReflect_Map(t *testing.T) {
-	r := FromAReflect(map[string]int{"a": 1}, nil)
+func TestFromAnyReflect_Map(t *testing.T) {
+	r := FromAnyReflect(map[string]int{"a": 1}, nil)
 	if !r.OK() {
-		t.Error("FromAReflect with non-empty map should be OK")
+		t.Error("FromAnyReflect with non-empty map should be OK")
 	}
 }
 
-func TestFromAReflect_EmptyMap(t *testing.T) {
-	r := FromAReflect(map[string]int{}, nil)
+func TestFromAnyReflect_EmptyMap(t *testing.T) {
+	r := FromAnyReflect(map[string]int{}, nil)
 	if r.OK() {
-		t.Error("FromAReflect with empty map should not be OK")
+		t.Error("FromAnyReflect with empty map should not be OK")
 	}
 }
 
-func TestFromAReflect_WithError(t *testing.T) {
+func TestFromAnyReflect_WithError(t *testing.T) {
 	e := errors.New("test error")
-	r := FromAReflect([]int{1, 2, 3}, e)
+	r := FromAnyReflect([]int{1, 2, 3}, e)
 	if r.OK() {
-		t.Error("FromAReflect with error should not be OK")
+		t.Error("FromAnyReflect with error should not be OK")
 	}
 	if r.Err() != e {
 		t.Error("should preserve the error")
 	}
 }
 
-func TestFromAReflect_ZeroInt(t *testing.T) {
-	r := FromAReflect(0, nil)
+func TestFromAnyReflect_ZeroInt(t *testing.T) {
+	r := FromAnyReflect(0, nil)
 	if r.OK() {
-		t.Error("FromAReflect(0) should not be OK")
+		t.Error("FromAnyReflect(0) should not be OK")
 	}
 }
 
-func TestFromAReflect_NonZeroInt(t *testing.T) {
-	r := FromAReflect(42, nil)
+func TestFromAnyReflect_NonZeroInt(t *testing.T) {
+	r := FromAnyReflect(42, nil)
 	if !r.OK() {
-		t.Error("FromAReflect(42) should be OK")
+		t.Error("FromAnyReflect(42) should be OK")
 	}
 	if r.Val() != 42 {
 		t.Errorf("expected 42, got %d", r.Val())
@@ -249,5 +249,19 @@ func TestResult_Any(t *testing.T) {
 	}
 	if anyR.Val() != 42 {
 		t.Errorf("expected 42, got %v", anyR.Val())
+	}
+}
+
+func TestOKAnyReflect_Valid(t *testing.T) {
+	r := OKAnyReflect([]int{1, 2, 3})
+	if !r.OK() {
+		t.Error("OKAnyReflect with non-empty slice should be OK")
+	}
+}
+
+func TestOKAnyReflect_Invalid(t *testing.T) {
+	r := OKAnyReflect([]int{})
+	if r.OK() {
+		t.Error("OKAnyReflect with empty slice should not be OK")
 	}
 }

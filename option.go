@@ -1,6 +1,6 @@
 package fn
 
-// Option implements option monad for type T: either [Nil]() or [Some]([SomeP])(T)
+// Option implements option monad for type T: either [Nil]() or [Some]([SomePtr])(T)
 type Option[T any] struct {
 	t T
 	v bool
@@ -14,8 +14,11 @@ func some[T any](t T) Option[T]        { return opt(t, true) }
 // Some returns [Option][T] for a value of T, where T implements [comparable]
 func Some[T comparable](t T) Option[T] { return opt(t, Valid(t)) }
 
-// SomeP returns [Option][T] for a pointer of T
-func SomeP[T any](t *T) Option[T] { return opt(OrZero(t), t != nil) }
+// SomePtr returns [Option][T] for a pointer of T
+func SomePtr[T any](t *T) Option[T] { return opt(OrZero(t), t != nil) }
+
+// SomeAny returns always valid [Option][T] for a value of T, bypassing validity checks.
+func SomeAny[T any](t T) Option[T] { return some(t) }
 
 // SomeAnyReflect Sreturns [Option][T] for a value of T.
 //

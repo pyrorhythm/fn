@@ -29,13 +29,13 @@ func IfPtr[T any](cond bool, then T, or *T) Option[T] {
 	if cond {
 		return some(then)
 	}
-	return SomeP(or)
+	return SomePtr(or)
 }
 
 // PtrIf returns [Option] by dereferencing pointer if cond is true, else uses value
 func PtrIf[T any](cond bool, then *T, or T) Option[T] {
 	if cond {
-		return SomeP(then)
+		return SomePtr(then)
 	}
 	return some(or)
 }

@@ -17,8 +17,8 @@ type Result[T any] struct {
 type AnyResult = Result[any]
 
 var (
-	ErrNilPointerInOKPtr = errors.New("nilptr passed to okptr")
-	ErrNoTFInTo          = errors.New("no tfunc passd in to(); result isnt exc")
+	ErrNilInOKPtr = errors.New("nil passed to okptr")
+	ErrNoTFInTo   = errors.New("no tfunc passd in to(); result isnt exc")
 )
 
 func res[T any](r Option[T], e error) Result[T] { return Result[T]{r, e} }
@@ -27,22 +27,22 @@ func ok[T any](r Option[T]) Result[T]           { return Result[T]{v: r} }
 func okv[T any](r T) Result[T]                  { return Result[T]{v: some(r)} }
 func okp[T any](r *T) Result[T]                 { return Result[T]{v: some(OrZero(r))} }
 
-func nilptr[T any]() Result[T] { return err[T](ErrNilPointerInOKPtr) }
-func notf[T any]() Result[T]   { return err[T](ErrNoTFInTo) }
+func nilok[T any]() Result[T] { return err[T](ErrNilInOKPtr) }
+func notf[T any]() Result[T]  { return err[T](ErrNoTFInTo) }
 
 // From creates [Result][T] from standard function output, where function yields a value of T and T implements [comparable]
 func From[T comparable](val T, err error) Result[T] { return res(Some(val), err) }
 
-// FromA creates [Result][T] from standard function output, bypassing value check (option is set as valid)
-func FromA[T any](val T, err error) Result[T] { return res(some(val), err) }
+// FromPtr creates [Result][T] from standard function output, where function yields a pointer of T
+func FromPtr[T any](val *T, err error) Result[T] { return res(SomePtr(val), err) }
 
-// FromAReflect creates [Result][T] from standard function output, where function yields a value of T and uses reflection to validate it.
+// FromAny creates [Result][T] from standard function output, bypassing validity checks (option set as valid)
+func FromAny[T any](val T, err error) Result[T] { return res(some(val), err) }
+
+// FromAnyReflect creates [Result][T] from standard function output, where function yields a value of T and uses reflection to validate it.
 //
 // Highly unrecommended for use, see [ValidReflect]
-func FromAReflect[T any](val T, err error) Result[T] { return res(SomeAnyReflect(val), err) }
-
-// FromP creates [Result][T] from standard function output, where function yields a pointer of T
-func FromP[T any](val *T, err error) Result[T] { return res(SomeP(val), err) }
+func FromAnyReflect[T any](val T, err error) Result[T] { return res(SomeAnyReflect(val), err) }
 
 // Err creates [Result][T] from error.
 //
@@ -59,8 +59,12 @@ func OK[T comparable](v T) Result[T] { return ok(Some(v)) }
 
 // OKPtr creates [Result][T] from T pointer.
 //
-// If pointer is nil, returns wrapped [ErrNilPointerInOKPtr] as [Result][T]
-func OKPtr[T any](v *T) Result[T] { return If(v != nil, okp(v), nilptr[T]()) }
+// When passing pointer to this function, you need to be sure that pointer is valid.
+// Else, returns wrapped [ErrNilInOKPtr] as [Result][T]
+func OKPtr[T any](v *T) Result[T] { return If(v != nil, okp(v), nilok[T]()) }
+
+// OKAny creates [Result][T] from a value of T, bypassing validity checks.
+func OKAny[T any](v T) Result[T] { return okv(v) }
 
 // OKAnyReflect creates [Result][T] from T value, using reflection.
 //
