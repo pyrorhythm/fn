@@ -1,60 +1,44 @@
 package fn
 
 import (
+	"bytes"
 	"fmt"
 
 	"github.com/bytedance/sonic"
 )
 
-type resultJSON[T any] struct {
-	Value      *T     `json:"result_value,omitempty"`
-	ValueValid bool   `json:"result_value_valid"`
-	Error      string `json:"result_error,omitempty"`
+type jerr struct {
+	Error string `json:"_ERROR"`
 }
+
+var errPrefix = []byte(`{"_ERROR"`)
 
 // UnmarshalJSON implements [json.Unmarshaler].
 func (r *Result[T]) UnmarshalJSON(ba []byte) error {
-	var rj resultJSON[T]
-
-	if err := sonic.Unmarshal(ba, &rj); err != nil {
-		*r = Err[T](fmt.Errorf("failed to unmarshal Result[%T]: %w", *new(T), err))
-
-		return err
+	// Fast path: check prefix to detect error objects
+	if bytes.HasPrefix(ba, errPrefix) {
+		var je jerr
+		if err := sonic.Unmarshal(ba, &je); err == nil && je.Error != "" {
+			*r = errn[T](je.Error)
+			return nil
+		}
 	}
 
-	// restore error if present
-	if rj.Error != "" {
-		*r = Err[T](fmt.Errorf("%s", rj.Error))
-
-		return nil
+	// Otherwise unmarshal as Option[T]
+	var opt Option[T]
+	if err := opt.UnmarshalJSON(ba); err != nil {
+		return fmt.Errorf("failed to unmarshal Result[%T]: %w", opt.t, err)
 	}
 
-	// restore option based on validity and value
-	if rj.Value == nil {
-		*r = ok(Nil[T]())
-	} else if rj.ValueValid {
-		*r = ok(some(*rj.Value))
-	} else {
-		*r = ok(Option[T]{t: *rj.Value, v: false})
-	}
-
+	*r = ok(opt)
 	return nil
 }
 
 // MarshalJSON implements [json.Marshaler].
 func (r Result[T]) MarshalJSON() ([]byte, error) {
-	rj := resultJSON[T]{
-		ValueValid: r.v.Valid(),
-	}
-
 	if r.e != nil {
-		rj.Error = r.e.Error()
+		return sonic.Marshal(jerr{r.e.Error()})
 	}
 
-	if r.v.Valid() {
-		v := r.v.Value()
-		rj.Value = &v
-	}
-
-	return sonic.Marshal(rj)
+	return r.v.MarshalJSON()
 }

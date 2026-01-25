@@ -22,10 +22,11 @@ var (
 )
 
 func res[T any](r Option[T], e error) Result[T] { return Result[T]{r, e} }
-func err[T any](e error) Result[T]              { return Result[T]{e: e} }
 func ok[T any](r Option[T]) Result[T]           { return Result[T]{v: r} }
-func okv[T any](r T) Result[T]                  { return Result[T]{v: some(r)} }
-func okp[T any](r *T) Result[T]                 { return Result[T]{v: some(OrZero(r))} }
+func okv[T any](r T) Result[T]                  { return ok(some(r)) }
+func okp[T any](r *T) Result[T]                 { return ok(some(OrZero(r))) }
+func err[T any](e error) Result[T]              { return Result[T]{e: e} }
+func errn[T any](s string) Result[T]            { return err[T](errors.New(s)) }
 
 func nilok[T any]() Result[T] { return err[T](ErrNilInOKPtr) }
 func notf[T any]() Result[T]  { return err[T](ErrNoTFInTo) }

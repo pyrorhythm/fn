@@ -16,7 +16,7 @@ func (o *Option[T]) UnmarshalJSON(ba []byte) error {
 	if err := sonic.Unmarshal(ba, &dest); err != nil {
 		*o = Nil[T]()
 
-		return fmt.Errorf("failed to unmarshal Option[%T]: %w", *new(T), err)
+		return fmt.Errorf("failed to unmarshal Option[%T]: %w", o.t, err)
 	}
 
 	// option is invalid, set zero value

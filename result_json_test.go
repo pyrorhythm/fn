@@ -14,7 +14,7 @@ func TestResult_MarshalJSON_OK(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	expected := `{"result_value":42,"result_value_valid":true}`
+	expected := `42`
 	if string(ba) != expected {
 		t.Errorf("expected %s, got %s", expected, string(ba))
 	}
@@ -27,7 +27,7 @@ func TestResult_MarshalJSON_Err(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	expected := `{"result_value_valid":false,"result_error":"something went wrong"}`
+	expected := `{"_ERROR":"something went wrong"}`
 	if string(ba) != expected {
 		t.Errorf("expected %s, got %s", expected, string(ba))
 	}
@@ -40,7 +40,7 @@ func TestResult_MarshalJSON_InvalidOption(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	expected := `{"result_value_valid":false}`
+	expected := `null`
 	if string(ba) != expected {
 		t.Errorf("expected %s, got %s", expected, string(ba))
 	}
@@ -53,7 +53,7 @@ func TestResult_MarshalJSON_String(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	expected := `{"result_value":"hello","result_value_valid":true}`
+	expected := `"hello"`
 	if string(ba) != expected {
 		t.Errorf("expected %s, got %s", expected, string(ba))
 	}
@@ -70,14 +70,14 @@ func TestResult_MarshalJSON_Struct(t *testing.T) {
 		t.Fatalf("failed to marshal: %v", err)
 	}
 
-	expected := `{"result_value":{"name":"Alice","age":30},"result_value_valid":true}`
+	expected := `{"name":"Alice","age":30}`
 	if string(ba) != expected {
 		t.Errorf("expected %s, got %s", expected, string(ba))
 	}
 }
 
 func TestResult_UnmarshalJSON_OK(t *testing.T) {
-	data := `{"result_value":42,"result_value_valid":true}`
+	data := `42`
 	var r Result[int]
 	err := sonic.Unmarshal([]byte(data), &r)
 	if err != nil {
@@ -93,7 +93,7 @@ func TestResult_UnmarshalJSON_OK(t *testing.T) {
 }
 
 func TestResult_UnmarshalJSON_Err(t *testing.T) {
-	data := `{"result_value_valid":false,"result_error":"something went wrong"}`
+	data := `{"_ERROR":"something went wrong"}`
 	var r Result[int]
 	err := sonic.Unmarshal([]byte(data), &r)
 	if err != nil {
@@ -106,13 +106,13 @@ func TestResult_UnmarshalJSON_Err(t *testing.T) {
 	if r.Err() == nil {
 		t.Error("expected error to be set")
 	}
-	if r.Err().Error() != "something went wrong" {
+	if r.Err() != nil && r.Err().Error() != "something went wrong" {
 		t.Errorf("expected 'something went wrong', got %q", r.Err().Error())
 	}
 }
 
 func TestResult_UnmarshalJSON_InvalidOption(t *testing.T) {
-	data := `{"result_value_valid":false}`
+	data := `null`
 	var r Result[int]
 	err := sonic.Unmarshal([]byte(data), &r)
 	if err != nil {
@@ -123,12 +123,12 @@ func TestResult_UnmarshalJSON_InvalidOption(t *testing.T) {
 		t.Error("expected invalid option")
 	}
 	if r.Err() != nil {
-		t.Error("should not have error, just invalid option")
+		t.Errorf("should not have error %#v, just invalid option", r.Err())
 	}
 }
 
 func TestResult_UnmarshalJSON_String(t *testing.T) {
-	data := `{"result_value":"hello","result_value_valid":true}`
+	data := `"hello"`
 	var r Result[string]
 	err := sonic.Unmarshal([]byte(data), &r)
 	if err != nil {
@@ -148,7 +148,7 @@ func TestResult_UnmarshalJSON_Struct(t *testing.T) {
 		Name string `json:"name"`
 		Age  int    `json:"age"`
 	}
-	data := `{"result_value":{"name":"Alice","age":30},"result_value_valid":true}`
+	data := `{"name":"Alice","age":30}`
 	var r Result[person]
 	err := sonic.Unmarshal([]byte(data), &r)
 	if err != nil {
@@ -234,29 +234,6 @@ func TestResult_JSON_Roundtrip_InvalidOption(t *testing.T) {
 		t.Errorf("OK mismatch: %v vs %v", original.OK(), restored.OK())
 	}
 	if restored.Opt().Valid() {
-		t.Error("option should be invalid")
-	}
-}
-
-func TestResult_UnmarshalJSON_ValuePresentButInvalid(t *testing.T) {
-	// Case: value is present but marked as invalid
-	data := `{"result_value":42,"result_value_valid":false}`
-	var r Result[int]
-	err := sonic.Unmarshal([]byte(data), &r)
-	if err != nil {
-		t.Fatalf("failed to unmarshal: %v", err)
-	}
-
-	if r.OK() {
-		t.Error("expected not OK (option invalid)")
-	}
-	if r.Err() != nil {
-		t.Error("should not have error, just invalid option")
-	}
-	if r.Val() != 42 {
-		t.Errorf("value should still be 42, got %d", r.Val())
-	}
-	if r.Opt().Valid() {
 		t.Error("option should be invalid")
 	}
 }
