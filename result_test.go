@@ -5,6 +5,10 @@ import (
 	"testing"
 )
 
+func e(s string) error {
+	return errors.New(s)
+}
+
 func TestOK(t *testing.T) {
 	r := OK(42)
 	if !r.OK() {
@@ -63,12 +67,12 @@ func TestFrom_WithValue(t *testing.T) {
 }
 
 func TestFrom_WithError(t *testing.T) {
-	e := errors.New("test error")
-	r := From(42, e)
+	err := errors.New("test error")
+	r := From(42, err)
 	if r.OK() {
 		t.Error("From(42, err) should not be OK")
 	}
-	if r.Err() != e {
+	if r.Err() != err {
 		t.Error("should have the error")
 	}
 }
@@ -77,6 +81,31 @@ func TestFromAny(t *testing.T) {
 	r := FromAny([]int{1, 2, 3}, nil)
 	if !r.OK() {
 		t.Error("FromAny with non-nil slice should be OK")
+	}
+}
+
+func TestFromOpt_NoError(t *testing.T) {
+	r := FromOpt(Option[int]{42, true}, nil)
+	if !r.OK() {
+		t.Error("FromOpt with NoError should be OK")
+	}
+}
+
+func TestFromOpt_HasError(t *testing.T) {
+	err := e("test_error")
+	r := FromOpt(Option[int]{42, true}, err)
+	if r.OK() {
+		t.Error("FromOpt with Error should not be OK")
+	}
+	if r.Err() != err {
+		t.Error("should have the error")
+	}
+}
+
+func TestFromOpt_Invalid(t *testing.T) {
+	r := FromOpt(Option[int]{42, false}, nil)
+	if r.OK() {
+		t.Error("FromOpt with Invalid option should not be OK")
 	}
 }
 
@@ -128,7 +157,7 @@ func TestFromAnyReflect_EmptyMap(t *testing.T) {
 }
 
 func TestFromAnyReflect_WithError(t *testing.T) {
-	e := errors.New("test error")
+	e := e("test error")
 	r := FromAnyReflect([]int{1, 2, 3}, e)
 	if r.OK() {
 		t.Error("FromAnyReflect with error should not be OK")
@@ -152,6 +181,20 @@ func TestFromAnyReflect_NonZeroInt(t *testing.T) {
 	}
 	if r.Val() != 42 {
 		t.Errorf("expected 42, got %d", r.Val())
+	}
+}
+
+func TestOKOpt_Invalid(t *testing.T) {
+	r := OKOpt(Option[int]{42, false})
+	if r.OK() {
+		t.Error("OKOpt with Invalid option should not be OK")
+	}
+}
+
+func TestOKOpt_Valid(t *testing.T) {
+	r := OKOpt(Option[int]{42, true})
+	if !r.OK() {
+		t.Error("OKOpt with valid option should be OK")
 	}
 }
 

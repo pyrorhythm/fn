@@ -40,6 +40,9 @@ func FromPtr[T any](val *T, err error) Result[T] { return res(SomePtr(val), err)
 // FromAny creates [Result][T] from standard function output, bypassing validity checks (option set as valid)
 func FromAny[T any](val T, err error) Result[T] { return res(some(val), err) }
 
+// FromOpt creates [Result][T] from given option.
+func FromOpt[T any](o Option[T], err error) Result[T] { return res(o, err) }
+
 // FromAnyReflect creates [Result][T] from standard function output, where function yields a value of T and uses reflection to validate it.
 //
 // Highly unrecommended for use, see [ValidReflect]
@@ -57,6 +60,9 @@ func Errn[T any](errStr string) Result[T] { return err[T](errors.New(errStr)) }
 
 // OK creates [Result][T] from a value of T, where T implements [comparable]
 func OK[T comparable](v T) Result[T] { return ok(Some(v)) }
+
+// OKOpt creates [Result][T] from given option.
+func OKOpt[T any](o Option[T]) Result[T] { return ok(o) }
 
 // OKPtr creates [Result][T] from T pointer.
 //
@@ -84,7 +90,7 @@ func (r Result[T]) Val() T { return r.v.t }
 // Ptr returns underlying T pointer from [Option][T]
 func (r Result[T]) Ptr() *T { return &r.v.t }
 
-// OK returns whether if [Result][T] is not containing error nor underlying [Option][T] is valid.
+// OK returns whether if [Result][T] is not containing error and underlying [Option][T] is valid.
 func (r Result[T]) OK() bool { return r.e == nil && r.v.v }
 
 // Exc is effectively a negation of [Result.OK]
