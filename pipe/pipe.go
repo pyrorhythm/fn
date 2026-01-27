@@ -19,37 +19,33 @@ func Five[A, B, C, D, E any](a A, fb func(A) B, fc func(B) C, fd func(C) D, fe f
 	return fe(Four(a, fb, fc, fd))
 }
 
-func TwoErr[A, B any](a A, ea error, fb func(A) (B, error)) (B, error) {
-	if ea != nil {
-		var zero B
-		return zero, ea
+func TwoErr[A, B any](a fn.Result[A], fb func(A) (B, error)) (z B, _ error) {
+	if a.Exc() {
+		return z, a.Err()
 	}
-	return fb(a)
+	return fb(a.Val())
 }
 
-func ThreeErr[A, B, C any](a A, ea error, fb func(A) (B, error), fc func(B) (C, error)) (C, error) {
-	var zero C
-	b, eb := TwoErr(a, ea, fb)
+func ThreeErr[A, B, C any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error)) (z C, _ error) {
+	b, eb := TwoErr(a, fb)
 	if eb != nil {
-		return zero, eb
+		return z, eb
 	}
 	return fc(b)
 }
 
-func FourErr[A, B, C, D any](a A, ea error, fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error)) (D, error) {
-	var zero D
-	c, ec := ThreeErr(a, ea, fb, fc)
+func FourErr[A, B, C, D any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error)) (z D, _ error) {
+	c, ec := ThreeErr(a, fb, fc)
 	if ec != nil {
-		return zero, ec
+		return z, ec
 	}
 	return fd(c)
 }
 
-func FiveErr[A, B, C, D, E any](a A, ea error, fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error), fe func(D) (E, error)) (E, error) {
-	var zero E
-	d, ed := FourErr(a, ea, fb, fc, fd)
-	if ed != nil {
-		return zero, ed
+func FiveErr[A, B, C, D, E any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error), fe func(D) (E, error)) (z E, _ error) {
+	d, ec := FourErr(a, fb, fc, fd)
+	if ec != nil {
+		return z, ec
 	}
 	return fe(d)
 }

@@ -54,17 +54,20 @@ func TestFive(t *testing.T) {
 // Error pipes — test type transformations with error handling
 
 func TestTwoErr(t *testing.T) {
-	got, err := TwoErr(42, nil, func(n int) (string, error) { return strconv.Itoa(n), nil })
+	got, err := TwoErr(fn.OK(42), func(n int) (string, error) { return strconv.Itoa(n), nil })
 	if err != nil || got != "42" {
 		t.Errorf("TwoErr = %q, %v, want \"42\", nil", got, err)
 	}
 
-	_, err = TwoErr(42, errors.New("init"), func(n int) (string, error) { return strconv.Itoa(n), nil })
+	_, err = TwoErr(
+		fn.From(42, errors.New("new err")),
+		func(n int) (string, error) { return strconv.Itoa(n), nil },
+	)
 	if err == nil {
 		t.Error("TwoErr should propagate initial error")
 	}
 
-	_, err = TwoErr(-1, nil, func(n int) (string, error) {
+	_, err = TwoErr(fn.OK(-1), func(n int) (string, error) {
 		if n < 0 {
 			return "", errors.New("negative")
 		}
@@ -76,7 +79,8 @@ func TestTwoErr(t *testing.T) {
 }
 
 func TestThreeErr(t *testing.T) {
-	got, err := ThreeErr("42", nil,
+	got, err := ThreeErr(
+		fn.OK("42"),
 		strconv.Atoi,
 		func(n int) (float64, error) { return float64(n) * 1.5, nil },
 	)
@@ -84,7 +88,8 @@ func TestThreeErr(t *testing.T) {
 		t.Errorf("ThreeErr = %v, %v, want 63.0, nil", got, err)
 	}
 
-	_, err = ThreeErr("bad", nil,
+	_, err = ThreeErr(
+		fn.OK("bad"),
 		strconv.Atoi,
 		func(n int) (float64, error) { return float64(n), nil },
 	)
@@ -94,7 +99,8 @@ func TestThreeErr(t *testing.T) {
 }
 
 func TestFourErr(t *testing.T) {
-	got, err := FourErr("42", nil,
+	got, err := FourErr(
+		fn.OK("42"),
 		strconv.Atoi,
 		func(n int) (float64, error) { return float64(n), nil },
 		func(f float64) (string, error) { return strconv.FormatFloat(f, 'f', 1, 64), nil },
@@ -103,7 +109,7 @@ func TestFourErr(t *testing.T) {
 		t.Errorf("FourErr = %q, %v, want \"42.0\", nil", got, err)
 	}
 
-	_, err = FourErr("42", nil,
+	_, err = FourErr(fn.OK("42"),
 		strconv.Atoi,
 		func(n int) (float64, error) { return 0, errors.New("fail") },
 		func(f float64) (string, error) { return "", nil },
@@ -114,7 +120,7 @@ func TestFourErr(t *testing.T) {
 }
 
 func TestFiveErr(t *testing.T) {
-	got, err := FiveErr("  42  ", nil,
+	got, err := FiveErr(fn.OK("     42    "),
 		func(s string) (string, error) { return strings.TrimSpace(s), nil },
 		strconv.Atoi,
 		func(n int) (float64, error) { return float64(n) * 2.5, nil },

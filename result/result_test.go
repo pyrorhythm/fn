@@ -119,13 +119,13 @@ func TestValid(t *testing.T) {
 
 func TestFold(t *testing.T) {
 	ok := OK(10)
-	got := ok.Fold(func() int { return -1 }, func(v int) int { return v * 2 })
+	got := ok.Fold(func(v int) int { return v * 2 }, func() int { return -1 })
 	if got != 20 {
 		t.Errorf("Fold on OK = %d, want 20", got)
 	}
 
 	fail := Err[int](errors.New("fail"))
-	got = fail.Fold(func() int { return -1 }, func(v int) int { return v * 2 })
+	got = fail.Fold(func(v int) int { return v * 2 }, func() int { return -1 })
 	if got != -1 {
 		t.Errorf("Fold on Err = %d, want -1", got)
 	}
