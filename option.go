@@ -46,6 +46,11 @@ func (o Option[T]) Ptr() *T {
 	return &o.t
 }
 
+// Unpack ... unpacks value and validity flag???
+func (o Option[T]) Unpack() (T, bool) {
+	return o.t, o.v
+}
+
 // RawPtr returns raw underlying pointer of [Option], no matter if it is valid or not.
 func (o Option[T]) RawPtr() *T {
 	return &o.t
@@ -53,3 +58,19 @@ func (o Option[T]) RawPtr() *T {
 
 // Any returns type-unsafe [Option]
 func (o Option[T]) Any() AnyOption { return AnyOption{o.t, o.v} }
+
+// Fold pattern matches over Option, calling onNil if invalid, onVal if valid.
+func (o Option[T]) Fold(onNil func() T, onVal func(T) T) T {
+	if o.v {
+		return onVal(o.t)
+	}
+	return onNil()
+}
+
+// FlatMap chains Option operations, returning Nil if invalid.
+func (o Option[T]) FlatMap(f func(T) Option[T]) Option[T] {
+	if o.v {
+		return f(o.t)
+	}
+	return Nil[T]()
+}

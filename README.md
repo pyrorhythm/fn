@@ -11,29 +11,52 @@
 go get github.com/pyrorhythm/fn
 ```
 
+## Packages
+
+```go
+import "github.com/pyrorhythm/fn/option"  // option.Of[T]
+import "github.com/pyrorhythm/fn/result"  // result.Of[T]
+import "github.com/pyrorhythm/fn/pipe"    // pipe.Two, pipe.Three...
+```
+
 ## Option
 
 ```go
-opt := fn.Some(42)           // valid if non-zero
-opt := fn.Some(0)            // invalid (zero value)
-opt := fn.SomeAny(0)         // valid (bypasses zero check)
-opt := fn.SomePtr(&value)    // from pointer, nil-safe
-opt := fn.Nil[int]()         // explicit nil
+import "github.com/pyrorhythm/fn/option"
 
-if opt.Valid() {
-    v := opt.Val()           // get value
-    p := opt.Ptr()           // get pointer (nil if invalid)
+var o option.Of[int]
+
+o = option.Some(42)           // valid if non-zero
+o = option.Some(0)            // invalid (zero value)
+o = option.SomeAny(0)         // valid (bypasses zero check)
+o = option.SomePtr(&value)    // from pointer, nil-safe
+o = option.Nil[int]()         // explicit nil
+
+if o.Valid() {
+    v := o.Val()              // get value
+    p := o.Ptr()              // get pointer (nil if invalid)
 }
+
+// FlatMap
+o2 := o.FlatMap(func(n int) option.Of[int] { return option.SomeAny(n * 2) })
+
+// Fold
+v := o.Fold(func() int { return 0 }, func(n int) int { return n * 2 })
 ```
 
 ## Result
 
 ```go
-r := fn.OK(42)                        // from value
-r := fn.OKPtr(&value)                 // from pointer
-r := fn.Err[int](err)                 // from error
-r := fn.Errn[int]("failed")           // from string
-r := fn.From(os.Open("file"))         // wrap (T, error)
+import "github.com/pyrorhythm/fn/result"
+
+var r result.Of[int]
+
+r = result.OK(42)                        // from value
+r = result.OKPtr(&value)                 // from pointer
+r = result.OKAny(0)                      // bypasses zero check
+r = result.Err[int](err)                 // from error
+r = result.Errn[int]("failed")           // from string
+r = result.From(os.Open("file"))         // wrap (T, error)
 
 if r.OK() {
     v := r.Val()
@@ -41,20 +64,100 @@ if r.OK() {
     e := r.Err()
 }
 
-val, err := r.Unpack()                // back to (T, error)
-err = r.Into(&dest)                   // assign + return error
+val, err := r.Unpack()                   // back to (T, error)
+err = r.Into(&dest)                      // assign + return error
+
+// FlatMap
+r2 := r.FlatMap(func(n int) result.Of[int] { return result.OKAny(n * 2) })
+
+// Fold
+v := r.Fold(func() int { return -1 }, func(n int) int { return n })
 ```
 
-## Map / FlatMap
+## Pipe
+
+```go
+import "github.com/pyrorhythm/fn/pipe"
+
+// Pure composition
+out := pipe.Three(input,
+    parseJSON,
+    validate,
+)
+
+// Error tuple composition (short-circuits on error)
+out, err := pipe.ThreeErr(input, nil,
+    func(s string) (int, error) { return strconv.Atoi(s) },
+    func(n int) (float64, error) { return float64(n) * 1.5, nil },
+)
+
+// Result monad composition (short-circuits on Exc)
+out := pipe.ThreeRes(
+    result.From(fetchData()),
+    transform,
+    save,
+)
+```
+
+## Generic Functions
+
+Works with both `Option` and `Result`:
+
+```go
+import "github.com/pyrorhythm/fn"
+
+// Extract value or fallback
+v := fn.OrElse(o, 0)
+v := fn.OrElse(r, "default")
+
+// Extract or panic
+v := fn.Must(o)
+v := fn.Must(r)
+
+// Pattern match with type change
+s := fn.Fold(o, func() string { return "empty" }, func(n int) string { return strconv.Itoa(n) })
+
+// Check validity
+ok := fn.IsValid(o)
+ok := fn.IsValid(r)
+
+// Monadic chain (FlatMap as free function)
+o2 := fn.Chain(o, func(n int) option.Of[int] { return option.SomeAny(n * 2) })
+r2 := fn.Chain(r, func(n int) result.Of[int] { return result.OKAny(n * 2) })
+
+// Sequence (ignore current value)
+o2 := fn.AndThen(o, option.Some(42))
+r2 := fn.AndThen(r, result.OK("next"))
+```
+
+## Interfaces
+
+```go
+// Container - value extraction
+type Container[T any] interface {
+    Val() T
+    Valid() bool
+}
+
+// Monad - chainable container
+type Monad[T, Self any] interface {
+    Container[T]
+    FlatMap(func(T) Self) Self
+}
+```
+
+Both `Option` and `Result` implement these interfaces.
+
+## Map / Morph (type-changing)
 
 ```go
 // Option
-opt2 := fn.OptTo(opt, strconv.Itoa)              // map
-opt3 := fn.OptMorph(opt, func(i int) Option[string] { ... })  // flatmap
+opt2 := fn.OptTo(opt, strconv.Itoa)              // map T -> U
+opt3 := fn.OptMorph(opt, func(i int) fn.Option[string] { ... })  // flatmap
 
 // Result
 r2 := fn.To(r, strconv.Itoa)                     // map (propagates error)
-r3 := fn.Morph(r, func(i int) Result[string] { ... })  // flatmap
+r3 := fn.Morph(r, func(i int) fn.Result[string] { ... })  // flatmap
 ```
 
 ## Conditionals

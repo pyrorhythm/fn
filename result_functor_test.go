@@ -126,20 +126,26 @@ func TestMorph_Chain(t *testing.T) {
 }
 
 func TestMorph_ChainShortCircuit(t *testing.T) {
-	r := OK(3)
-	r2 := Morph(r, func(i int) Result[int] {
-		if i > 5 {
-			return OK(i * 2)
-		}
-		return Errn[int]("too small")
-	})
-	r3 := Morph(r2, func(i int) Result[string] {
-		return OK(strconv.Itoa(i))
-	})
-	if r3.OK() {
+	r := Morph(
+		Morph(
+			OK(3),
+			//
+			func(i int) Result[int] {
+				if i > 5 {
+					return OK(i * 2)
+				}
+				return Errn[int]("too small")
+			},
+		),
+		//
+		func(i int) Result[string] {
+			return OK(strconv.Itoa(i))
+		},
+	)
+	if r.OK() {
 		t.Error("should short-circuit on first error")
 	}
-	if r3.Err().Error() != "too small" {
-		t.Errorf("expected 'too small', got %q", r3.Err().Error())
+	if r.Err().Error() != "too small" {
+		t.Errorf("expected 'too small', got %q", r.Err().Error())
 	}
 }

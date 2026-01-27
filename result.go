@@ -93,8 +93,8 @@ func (r Result[T]) Ptr() *T { return &r.v.t }
 // OK returns whether if [Result][T] is not containing error and underlying [Option][T] is valid.
 func (r Result[T]) OK() bool { return r.e == nil && r.v.v }
 
-// Exc is effectively a negation of [Result.OK]
-func (r Result[T]) Exc() bool { return r.e != nil || !r.v.v }
+// Exc is a negation of [Result.OK]
+func (r Result[T]) Exc() bool { return !r.OK() }
 
 // Into sets underlying [Option][T] value to giver pointer of T
 func (r Result[T]) Into(d *T) error { r.v.into(d); return r.e }
@@ -104,3 +104,53 @@ func (r Result[T]) Unpack() (T, error) { return r.v.t, r.e }
 
 // Any returns type-unsafe [AnyResult]
 func (r Result[T]) Any() AnyResult { return AnyResult{r.v.Any(), r.e} }
+
+// Inspect calls provided function with result itself.
+func (r Result[T]) Inspect(f func(r Result[T])) {
+	f(r)
+}
+
+// MapResult maps result (LOL) to the result of  the same type by calling provided function.
+func (r *Result[T]) MapResult(f func(r Result[T]) Result[T]) {
+	*r = f(*r)
+}
+
+// Map maps underlying optional T to the option of the same type by calling provided function.
+//
+// If [Result][T] contains error, function is not being called.
+func (r *Result[T]) Map(f func(T, bool) (T, bool)) {
+	if r.e != nil {
+		return
+	}
+	r.v = opt(f(r.v.Unpack()))
+}
+
+// MapTo maps underlying optional T to the [Result][T] by calling provided function.
+//
+// If [Result][T] contains error, function is not being called.
+func (r *Result[T]) MapTo(f func(T, bool) Result[T]) {
+	if r.e != nil {
+		return
+	}
+	*r = f(r.v.Unpack())
+}
+
+// Valid returns true if Result is OK (no error and valid option).
+// Implements [Container] interface.
+func (r Result[T]) Valid() bool { return r.OK() }
+
+// Fold pattern matches over Result, calling onFail if Exc, onVal if OK.
+func (r Result[T]) Fold(onValue func(T) T, onFail func() T) T {
+	if r.OK() {
+		return onValue(r.v.t)
+	}
+	return onFail()
+}
+
+// FlatMap chains Result operations, propagating error if Exc.
+func (r Result[T]) FlatMap(f func(T) Result[T]) Result[T] {
+	if r.OK() {
+		return f(r.v.t)
+	}
+	return err[T](r.e)
+}
