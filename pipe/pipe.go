@@ -52,7 +52,7 @@ func FiveErr[A, B, C, D, E any](a fn.Result[A], fb func(A) (B, error), fc func(B
 
 func TwoRes[A, B any](ra fn.Result[A], fb func(A) fn.Result[B]) fn.Result[B] {
 	if ra.Exc() {
-		return fn.Err[B](ra.Err())
+		return fn.To[A, B](ra)
 	}
 	return fb(ra.Val())
 }
@@ -60,7 +60,7 @@ func TwoRes[A, B any](ra fn.Result[A], fb func(A) fn.Result[B]) fn.Result[B] {
 func ThreeRes[A, B, C any](ra fn.Result[A], fb func(A) fn.Result[B], fc func(B) fn.Result[C]) fn.Result[C] {
 	rb := TwoRes(ra, fb)
 	if rb.Exc() {
-		return fn.Err[C](rb.Err())
+		return fn.To[B, C](rb)
 	}
 	return fc(rb.Val())
 }
@@ -68,7 +68,7 @@ func ThreeRes[A, B, C any](ra fn.Result[A], fb func(A) fn.Result[B], fc func(B) 
 func FourRes[A, B, C, D any](ra fn.Result[A], fb func(A) fn.Result[B], fc func(B) fn.Result[C], fd func(C) fn.Result[D]) fn.Result[D] {
 	rc := ThreeRes(ra, fb, fc)
 	if rc.Exc() {
-		return fn.Err[D](rc.Err())
+		return fn.To[C, D](rc)
 	}
 	return fd(rc.Val())
 }
@@ -76,7 +76,75 @@ func FourRes[A, B, C, D any](ra fn.Result[A], fb func(A) fn.Result[B], fc func(B
 func FiveRes[A, B, C, D, E any](ra fn.Result[A], fb func(A) fn.Result[B], fc func(B) fn.Result[C], fd func(C) fn.Result[D], fe func(D) fn.Result[E]) fn.Result[E] {
 	rd := FourRes(ra, fb, fc, fd)
 	if rd.Exc() {
-		return fn.Err[E](rd.Err())
+		return fn.To[D, E](rd)
 	}
 	return fe(rd.Val())
+}
+
+func TwoWrap[A, B any](a fn.Result[A], fb func(A) (B, error)) fn.Result[B] {
+	if a.Exc() {
+		return fn.To[A, B](a)
+	}
+	b, err := fb(a.Val())
+	if err != nil {
+		return fn.Err[B](err)
+	}
+	return fn.OKAny(b)
+}
+
+func ThreeWrap[A, B, C any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error)) fn.Result[C] {
+	if a.Exc() {
+		return fn.To[A, C](a)
+	}
+	b, err := fb(a.Val())
+	if err != nil {
+		return fn.Err[C](err)
+	}
+	c, err := fc(b)
+	if err != nil {
+		return fn.Err[C](err)
+	}
+	return fn.OKAny(c)
+}
+
+func FourWrap[A, B, C, D any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error)) fn.Result[D] {
+	if a.Exc() {
+		return fn.To[A, D](a)
+	}
+	b, err := fb(a.Val())
+	if err != nil {
+		return fn.Err[D](err)
+	}
+	c, err := fc(b)
+	if err != nil {
+		return fn.Err[D](err)
+	}
+	d, err := fd(c)
+	if err != nil {
+		return fn.Err[D](err)
+	}
+	return fn.OKAny(d)
+}
+
+func FiveWrap[A, B, C, D, E any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error), fe func(D) (E, error)) fn.Result[E] {
+	if a.Exc() {
+		return fn.To[A, E](a)
+	}
+	b, err := fb(a.Val())
+	if err != nil {
+		return fn.Err[E](err)
+	}
+	c, err := fc(b)
+	if err != nil {
+		return fn.Err[E](err)
+	}
+	d, err := fd(c)
+	if err != nil {
+		return fn.Err[E](err)
+	}
+	e, err := fe(d)
+	if err != nil {
+		return fn.Err[E](err)
+	}
+	return fn.OKAny(e)
 }
