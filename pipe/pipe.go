@@ -5,34 +5,34 @@ import "github.com/pyrorhythm/fn"
 
 func Two[In, Out any](
 	in In,
-	fin func(In) Out,
+	fin fn.Transformer[In, Out],
 ) Out {
 	return fin(in)
 }
 
 func Three[In, inter, Out any](
 	in In,
-	fin func(In) inter,
-	finter func(inter) Out,
+	fin fn.Transformer[In, inter],
+	finter fn.Transformer[inter, Out],
 ) Out {
 	return finter(Two(in, fin))
 }
 
 func Four[In, inter1, inter2, Out any](
 	in In,
-	fin func(In) inter1,
-	finter1 func(inter1) inter2,
-	finter2 func(inter2) Out,
+	fin fn.Transformer[In, inter1],
+	finter1 fn.Transformer[inter1, inter2],
+	finter2 fn.Transformer[inter2, Out],
 ) Out {
 	return finter2(Three(in, fin, finter1))
 }
 
 func Five[In, inter1, inter2, inter3, Out any](
 	in In,
-	fin func(In) inter1,
-	finter1 func(inter1) inter2,
-	finter2 func(inter2) inter3,
-	finter3 func(inter3) Out,
+	fin fn.Transformer[In, inter1],
+	finter1 fn.Transformer[inter1, inter2],
+	finter2 fn.Transformer[inter2, inter3],
+	finter3 fn.Transformer[inter3, Out],
 ) Out {
 	return finter3(Four(in, fin, finter1, finter2))
 }
@@ -85,7 +85,7 @@ func FiveErr[In, inter1, inter2, inter3, Out any](
 
 func TwoRes[In, Out any](
 	ra fn.Result[In],
-	fb func(In) fn.Result[Out],
+	fb fn.Transformer[In, fn.Result[Out]],
 ) fn.Result[Out] {
 	return fn.Morph(ra, func(i In) fn.Result[Out] {
 		return fb(i)
@@ -94,8 +94,8 @@ func TwoRes[In, Out any](
 
 func ThreeRes[In, inter, Out any](
 	ra fn.Result[In],
-	fb func(In) fn.Result[inter],
-	fc func(inter) fn.Result[Out],
+	fb fn.Transformer[In, fn.Result[inter]],
+	fc fn.Transformer[inter, fn.Result[Out]],
 ) fn.Result[Out] {
 	return fn.Morph(TwoRes(ra, fb), func(i inter) fn.Result[Out] {
 		return fc(i)
@@ -104,9 +104,9 @@ func ThreeRes[In, inter, Out any](
 
 func FourRes[In, inter1, inter2, Out any](
 	ra fn.Result[In],
-	fb func(In) fn.Result[inter1],
-	fc func(inter1) fn.Result[inter2],
-	fd func(inter2) fn.Result[Out],
+	fb fn.Transformer[In, fn.Result[inter1]],
+	fc fn.Transformer[inter1, fn.Result[inter2]],
+	fd fn.Transformer[inter2, fn.Result[Out]],
 ) fn.Result[Out] {
 	return fn.Morph(ThreeRes(ra, fb, fc), func(i2 inter2) fn.Result[Out] {
 		return fd(i2)
@@ -115,10 +115,10 @@ func FourRes[In, inter1, inter2, Out any](
 
 func FiveRes[In, inter1, inter2, inter3, Out any](
 	ra fn.Result[In],
-	fb func(In) fn.Result[inter1],
-	fc func(inter1) fn.Result[inter2],
-	fd func(inter2) fn.Result[inter3],
-	fe func(inter3) fn.Result[Out],
+	fb fn.Transformer[In, fn.Result[inter1]],
+	fc fn.Transformer[inter1, fn.Result[inter2]],
+	fd fn.Transformer[inter2, fn.Result[inter3]],
+	fe fn.Transformer[inter3, fn.Result[Out]],
 ) fn.Result[Out] {
 	return fn.Morph(FourRes(ra, fb, fc, fd), func(i3 inter3) fn.Result[Out] {
 		return fe(i3)
@@ -165,6 +165,50 @@ func FiveWrap[In, inter1, inter2, inter3, Out any](
 	return fn.Morph(FourWrap(a, fb, fc, fd),
 		func(i3 inter3) fn.Result[Out] {
 			return fn.FromAny(fe(i3))
+		},
+	)
+}
+
+func TwoWrapPtr[In, Out any](
+	a fn.Result[In],
+	fb func(In) (*Out, error),
+) fn.Result[Out] {
+	return fn.Morph(a, func(i In) fn.Result[Out] {
+		return fn.FromPtr(fb(i))
+	})
+}
+
+func ThreeWrapPtr[In, inter, Out any](
+	a fn.Result[In],
+	fb func(In) (inter, error),
+	fc func(inter) (*Out, error),
+) fn.Result[Out] {
+	return fn.Morph(TwoWrap(a, fb), func(i inter) fn.Result[Out] {
+		return fn.FromPtr(fc(i))
+	})
+}
+
+func FourWrapPtr[In, inter1, inter2, Out any](
+	a fn.Result[In],
+	fb func(In) (inter1, error),
+	fc func(inter1) (inter2, error),
+	fd func(inter2) (*Out, error),
+) fn.Result[Out] {
+	return fn.Morph(ThreeWrap(a, fb, fc), func(i2 inter2) fn.Result[Out] {
+		return fn.FromPtr(fd(i2))
+	})
+}
+
+func FiveWrapPtr[In, inter1, inter2, inter3, Out any](
+	a fn.Result[In],
+	fb func(In) (inter1, error),
+	fc func(inter1) (inter2, error),
+	fd func(inter2) (inter3, error),
+	fe func(inter3) (*Out, error),
+) fn.Result[Out] {
+	return fn.Morph(FourWrap(a, fb, fc, fd),
+		func(i3 inter3) fn.Result[Out] {
+			return fn.FromPtr(fe(i3))
 		},
 	)
 }
