@@ -34,19 +34,22 @@ func errn[T any](s string) Result[T]            { return err[T](errors.New(s)) }
 func nilok[T any]() Result[T] { return err[T](ErrNilInOKPtr) }
 func notf[T any]() Result[T]  { return err[T](ErrNoTFInTo) }
 
-// From creates [Result][T] from standard function output, where function yields a value of T and T implements [comparable]
+// From creates [Result][T] from standard function output,
+// where function yields a value of T and T implements [comparable]
 func From[T comparable](val T, err error) Result[T] { return res(Some(val), err) }
 
 // FromPtr creates [Result][T] from standard function output, where function yields a pointer of T
 func FromPtr[T any](val *T, err error) Result[T] { return res(SomePtr(val), err) }
 
-// FromAny creates [Result][T] from standard function output, bypassing validity checks (option set as valid)
+// FromAny creates [Result][T] from standard function output,
+// bypassing validity checks (option set as valid)
 func FromAny[T any](val T, err error) Result[T] { return res(some(val), err) }
 
 // FromOpt creates [Result][T] from given option.
 func FromOpt[T any](o Option[T], err error) Result[T] { return res(o, err) }
 
-// FromAnyReflect creates [Result][T] from standard function output, where function yields a value of T and uses reflection to validate it.
+// FromAnyReflect creates [Result][T] from standard function output,
+// where function yields a value of T and uses reflection to validate it.
 //
 // Highly unrecommended for use, see [ValidReflect]
 func FromAnyReflect[T any](val T, err error) Result[T] { return res(SomeAnyReflect(val), err) }

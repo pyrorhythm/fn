@@ -195,3 +195,192 @@ func TestFiveRes(t *testing.T) {
 		t.Errorf("FiveRes = %v, want OK(105)", got)
 	}
 }
+
+// Wrap pipes — test type transformations wrapping (value, error) into Result
+
+func TestTwoWrap(t *testing.T) {
+	// Success case
+	got := TwoWrap(fn.OK(42), func(n int) (string, error) { return strconv.Itoa(n), nil })
+	if !got.OK() || got.Val() != "42" {
+		t.Errorf("TwoWrap = %v, want OK(\"42\")", got)
+	}
+
+	// Initial Result error propagation
+	got = TwoWrap(
+		fn.Err[int](errors.New("init")),
+		func(n int) (string, error) { return strconv.Itoa(n), nil },
+	)
+	if got.OK() {
+		t.Error("TwoWrap should propagate initial error")
+	}
+
+	// Function error wrapping
+	got = TwoWrap(fn.OK(-1), func(n int) (string, error) {
+		if n < 0 {
+			return "", errors.New("negative")
+		}
+		return strconv.Itoa(n), nil
+	})
+	if got.OK() {
+		t.Error("TwoWrap should wrap function error into Result")
+	}
+}
+
+func TestThreeWrap(t *testing.T) {
+	// Success case
+	got := ThreeWrap(
+		fn.OK("42"),
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n) * 1.5, nil },
+	)
+	if !got.OK() || got.Val() != 63.0 {
+		t.Errorf("ThreeWrap = %v, want OK(63.0)", got)
+	}
+
+	// Initial error propagation
+	got = ThreeWrap(
+		fn.Err[string](errors.New("init")),
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n), nil },
+	)
+	if got.OK() {
+		t.Error("ThreeWrap should propagate initial error")
+	}
+
+	// First function error
+	got = ThreeWrap(
+		fn.OK("bad"),
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n), nil },
+	)
+	if got.OK() {
+		t.Error("ThreeWrap should short-circuit on first function error")
+	}
+
+	// Second function error
+	got = ThreeWrap(
+		fn.OK("42"),
+		strconv.Atoi,
+		func(n int) (float64, error) { return 0, errors.New("second fail") },
+	)
+	if got.OK() {
+		t.Error("ThreeWrap should wrap second function error")
+	}
+}
+
+func TestFourWrap(t *testing.T) {
+	// Success case
+	got := FourWrap(
+		fn.OK("42"),
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n), nil },
+		func(f float64) (string, error) { return strconv.FormatFloat(f, 'f', 1, 64), nil },
+	)
+	if !got.OK() || got.Val() != "42.0" {
+		t.Errorf("FourWrap = %v, want OK(\"42.0\")", got)
+	}
+
+	// Initial error propagation
+	got = FourWrap(
+		fn.Err[string](errors.New("init")),
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n), nil },
+		func(f float64) (string, error) { return "", nil },
+	)
+	if got.OK() {
+		t.Error("FourWrap should propagate initial error")
+	}
+
+	// Middle function error
+	got = FourWrap(
+		fn.OK("42"),
+		strconv.Atoi,
+		func(n int) (float64, error) { return 0, errors.New("middle fail") },
+		func(f float64) (string, error) { return "", nil },
+	)
+	if got.OK() {
+		t.Error("FourWrap should short-circuit on middle error")
+	}
+
+	// Last function error
+	got = FourWrap(
+		fn.OK("42"),
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n), nil },
+		func(f float64) (string, error) { return "", errors.New("last fail") },
+	)
+	if got.OK() {
+		t.Error("FourWrap should wrap last function error")
+	}
+}
+
+func TestFiveWrap(t *testing.T) {
+	// Success case
+	got := FiveWrap(
+		fn.OK("     42    "),
+		func(s string) (string, error) { return strings.TrimSpace(s), nil },
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n) * 2.5, nil },
+		func(f float64) (int, error) { return int(f), nil },
+	)
+	if !got.OK() || got.Val() != 105 {
+		t.Errorf("FiveWrap = %v, want OK(105)", got)
+	}
+
+	// Initial error propagation
+	got = FiveWrap(
+		fn.Err[string](errors.New("init")),
+		func(s string) (string, error) { return strings.TrimSpace(s), nil },
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n), nil },
+		func(f float64) (int, error) { return int(f), nil },
+	)
+	if got.OK() {
+		t.Error("FiveWrap should propagate initial error")
+	}
+
+	// Error at each step
+	got = FiveWrap(
+		fn.OK("42"),
+		func(s string) (string, error) { return "", errors.New("step1") },
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n), nil },
+		func(f float64) (int, error) { return int(f), nil },
+	)
+	if got.OK() {
+		t.Error("FiveWrap should short-circuit on first function error")
+	}
+
+	got = FiveWrap(
+		fn.OK("42"),
+		func(s string) (string, error) { return s, nil },
+		func(s string) (int, error) { return 0, errors.New("step2") },
+		func(n int) (float64, error) { return float64(n), nil },
+		func(f float64) (int, error) { return int(f), nil },
+	)
+	if got.OK() {
+		t.Error("FiveWrap should short-circuit on second function error")
+	}
+
+	got = FiveWrap(
+		fn.OK("42"),
+		func(s string) (string, error) { return s, nil },
+		strconv.Atoi,
+		func(n int) (float64, error) { return 0, errors.New("step3") },
+		func(f float64) (int, error) { return int(f), nil },
+	)
+	if got.OK() {
+		t.Error("FiveWrap should short-circuit on third function error")
+	}
+
+	got = FiveWrap(
+		fn.OK("42"),
+		func(s string) (string, error) { return s, nil },
+		strconv.Atoi,
+		func(n int) (float64, error) { return float64(n), nil },
+		func(f float64) (int, error) { return 0, errors.New("step4") },
+	)
+	if got.OK() {
+		t.Error("FiveWrap should wrap fourth function error")
+	}
+}

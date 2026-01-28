@@ -3,30 +3,52 @@ package pipe
 
 import "github.com/pyrorhythm/fn"
 
-func Two[A, B any](a A, fb func(A) B) B {
-	return fb(a)
+func Two[In, Out any](
+	in In,
+	fin func(In) Out,
+) Out {
+	return fin(in)
 }
 
-func Three[A, B, C any](a A, fb func(A) B, fc func(B) C) C {
-	return fc(Two(a, fb))
+func Three[In, inter, Out any](
+	in In,
+	fin func(In) inter,
+	finter func(inter) Out,
+) Out {
+	return finter(Two(in, fin))
 }
 
-func Four[A, B, C, D any](a A, fb func(A) B, fc func(B) C, fd func(C) D) D {
-	return fd(Three(a, fb, fc))
+func Four[In, inter1, inter2, Out any](
+	in In,
+	fin func(In) inter1,
+	finter1 func(inter1) inter2,
+	finter2 func(inter2) Out,
+) Out {
+	return finter2(Three(in, fin, finter1))
 }
 
-func Five[A, B, C, D, E any](a A, fb func(A) B, fc func(B) C, fd func(C) D, fe func(D) E) E {
-	return fe(Four(a, fb, fc, fd))
+func Five[In, inter1, inter2, inter3, Out any](
+	in In,
+	fin func(In) inter1,
+	finter1 func(inter1) inter2,
+	finter2 func(inter2) inter3,
+	finter3 func(inter3) Out,
+) Out {
+	return finter3(Four(in, fin, finter1, finter2))
 }
 
-func TwoErr[A, B any](a fn.Result[A], fb func(A) (B, error)) (z B, _ error) {
+func TwoErr[In, Out any](a fn.Result[In], fb func(In) (Out, error)) (z Out, _ error) {
 	if a.Exc() {
 		return z, a.Err()
 	}
 	return fb(a.Val())
 }
 
-func ThreeErr[A, B, C any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error)) (z C, _ error) {
+func ThreeErr[In, inter, Out any](
+	a fn.Result[In],
+	fb func(In) (inter, error),
+	fc func(inter) (Out, error),
+) (z Out, _ error) {
 	b, eb := TwoErr(a, fb)
 	if eb != nil {
 		return z, eb
@@ -34,7 +56,12 @@ func ThreeErr[A, B, C any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C,
 	return fc(b)
 }
 
-func FourErr[A, B, C, D any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error)) (z D, _ error) {
+func FourErr[In, inter1, inter2, Out any](
+	a fn.Result[In],
+	fb func(In) (inter1, error),
+	fc func(inter1) (inter2, error),
+	fd func(inter2) (Out, error),
+) (z Out, _ error) {
 	c, ec := ThreeErr(a, fb, fc)
 	if ec != nil {
 		return z, ec
@@ -42,7 +69,13 @@ func FourErr[A, B, C, D any](a fn.Result[A], fb func(A) (B, error), fc func(B) (
 	return fd(c)
 }
 
-func FiveErr[A, B, C, D, E any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error), fe func(D) (E, error)) (z E, _ error) {
+func FiveErr[In, inter1, inter2, inter3, Out any](
+	a fn.Result[In],
+	fb func(In) (inter1, error),
+	fc func(inter1) (inter2, error),
+	fd func(inter2) (inter3, error),
+	fe func(inter3) (Out, error),
+) (z Out, _ error) {
 	d, ec := FourErr(a, fb, fc, fd)
 	if ec != nil {
 		return z, ec
@@ -50,101 +83,88 @@ func FiveErr[A, B, C, D, E any](a fn.Result[A], fb func(A) (B, error), fc func(B
 	return fe(d)
 }
 
-func TwoRes[A, B any](ra fn.Result[A], fb func(A) fn.Result[B]) fn.Result[B] {
-	if ra.Exc() {
-		return fn.To[A, B](ra)
-	}
-	return fb(ra.Val())
+func TwoRes[In, Out any](
+	ra fn.Result[In],
+	fb func(In) fn.Result[Out],
+) fn.Result[Out] {
+	return fn.Morph(ra, func(i In) fn.Result[Out] {
+		return fb(i)
+	})
 }
 
-func ThreeRes[A, B, C any](ra fn.Result[A], fb func(A) fn.Result[B], fc func(B) fn.Result[C]) fn.Result[C] {
-	rb := TwoRes(ra, fb)
-	if rb.Exc() {
-		return fn.To[B, C](rb)
-	}
-	return fc(rb.Val())
+func ThreeRes[In, inter, Out any](
+	ra fn.Result[In],
+	fb func(In) fn.Result[inter],
+	fc func(inter) fn.Result[Out],
+) fn.Result[Out] {
+	return fn.Morph(TwoRes(ra, fb), func(i inter) fn.Result[Out] {
+		return fc(i)
+	})
 }
 
-func FourRes[A, B, C, D any](ra fn.Result[A], fb func(A) fn.Result[B], fc func(B) fn.Result[C], fd func(C) fn.Result[D]) fn.Result[D] {
-	rc := ThreeRes(ra, fb, fc)
-	if rc.Exc() {
-		return fn.To[C, D](rc)
-	}
-	return fd(rc.Val())
+func FourRes[In, inter1, inter2, Out any](
+	ra fn.Result[In],
+	fb func(In) fn.Result[inter1],
+	fc func(inter1) fn.Result[inter2],
+	fd func(inter2) fn.Result[Out],
+) fn.Result[Out] {
+	return fn.Morph(ThreeRes(ra, fb, fc), func(i2 inter2) fn.Result[Out] {
+		return fd(i2)
+	})
 }
 
-func FiveRes[A, B, C, D, E any](ra fn.Result[A], fb func(A) fn.Result[B], fc func(B) fn.Result[C], fd func(C) fn.Result[D], fe func(D) fn.Result[E]) fn.Result[E] {
-	rd := FourRes(ra, fb, fc, fd)
-	if rd.Exc() {
-		return fn.To[D, E](rd)
-	}
-	return fe(rd.Val())
+func FiveRes[In, inter1, inter2, inter3, Out any](
+	ra fn.Result[In],
+	fb func(In) fn.Result[inter1],
+	fc func(inter1) fn.Result[inter2],
+	fd func(inter2) fn.Result[inter3],
+	fe func(inter3) fn.Result[Out],
+) fn.Result[Out] {
+	return fn.Morph(FourRes(ra, fb, fc, fd), func(i3 inter3) fn.Result[Out] {
+		return fe(i3)
+	})
 }
 
-func TwoWrap[A, B any](a fn.Result[A], fb func(A) (B, error)) fn.Result[B] {
-	if a.Exc() {
-		return fn.To[A, B](a)
-	}
-	b, err := fb(a.Val())
-	if err != nil {
-		return fn.Err[B](err)
-	}
-	return fn.OKAny(b)
+func TwoWrap[In, Out any](
+	a fn.Result[In],
+	fb func(In) (Out, error),
+) fn.Result[Out] {
+	return fn.Morph(a, func(i In) fn.Result[Out] {
+		return fn.FromAny(fb(i))
+	})
 }
 
-func ThreeWrap[A, B, C any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error)) fn.Result[C] {
-	if a.Exc() {
-		return fn.To[A, C](a)
-	}
-	b, err := fb(a.Val())
-	if err != nil {
-		return fn.Err[C](err)
-	}
-	c, err := fc(b)
-	if err != nil {
-		return fn.Err[C](err)
-	}
-	return fn.OKAny(c)
+func ThreeWrap[In, inter, Out any](
+	a fn.Result[In],
+	fb func(In) (inter, error),
+	fc func(inter) (Out, error),
+) fn.Result[Out] {
+	return fn.Morph(TwoWrap(a, fb), func(i inter) fn.Result[Out] {
+		return fn.FromAny(fc(i))
+	})
 }
 
-func FourWrap[A, B, C, D any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error)) fn.Result[D] {
-	if a.Exc() {
-		return fn.To[A, D](a)
-	}
-	b, err := fb(a.Val())
-	if err != nil {
-		return fn.Err[D](err)
-	}
-	c, err := fc(b)
-	if err != nil {
-		return fn.Err[D](err)
-	}
-	d, err := fd(c)
-	if err != nil {
-		return fn.Err[D](err)
-	}
-	return fn.OKAny(d)
+func FourWrap[In, inter1, inter2, Out any](
+	a fn.Result[In],
+	fb func(In) (inter1, error),
+	fc func(inter1) (inter2, error),
+	fd func(inter2) (Out, error),
+) fn.Result[Out] {
+	return fn.Morph(ThreeWrap(a, fb, fc), func(i2 inter2) fn.Result[Out] {
+		return fn.FromAny(fd(i2))
+	})
 }
 
-func FiveWrap[A, B, C, D, E any](a fn.Result[A], fb func(A) (B, error), fc func(B) (C, error), fd func(C) (D, error), fe func(D) (E, error)) fn.Result[E] {
-	if a.Exc() {
-		return fn.To[A, E](a)
-	}
-	b, err := fb(a.Val())
-	if err != nil {
-		return fn.Err[E](err)
-	}
-	c, err := fc(b)
-	if err != nil {
-		return fn.Err[E](err)
-	}
-	d, err := fd(c)
-	if err != nil {
-		return fn.Err[E](err)
-	}
-	e, err := fe(d)
-	if err != nil {
-		return fn.Err[E](err)
-	}
-	return fn.OKAny(e)
+func FiveWrap[In, inter1, inter2, inter3, Out any](
+	a fn.Result[In],
+	fb func(In) (inter1, error),
+	fc func(inter1) (inter2, error),
+	fd func(inter2) (inter3, error),
+	fe func(inter3) (Out, error),
+) fn.Result[Out] {
+	return fn.Morph(FourWrap(a, fb, fc, fd),
+		func(i3 inter3) fn.Result[Out] {
+			return fn.FromAny(fe(i3))
+		},
+	)
 }
