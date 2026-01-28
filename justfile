@@ -7,6 +7,7 @@ gover:
 	goveralls -repotoken ${GOVERALLS_TOKEN}
 
 updsum SEMVER:
+	sleep 3
 	curl https://sum.golang.org/lookup/github.com/pyrorhythm/fn@{{SEMVER}}
 
 [parallel]
