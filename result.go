@@ -1,6 +1,9 @@
 package fn
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+)
 
 // Result [T] implements the result monad. It can be represented either by:
 //
@@ -57,6 +60,11 @@ func Err[T any](e error) Result[T] { return err[T](e) }
 //
 // Implements Err(error) monad.
 func Errn[T any](errStr string) Result[T] { return err[T](errors.New(errStr)) }
+
+// Errw creates [Result][T] from wrapped error.
+//
+// Implements Err(error) monad.
+func Errw[T any](e error, s string) Result[T] { return err[T](fmt.Errorf("%s: %w", s, e)) }
 
 // OK creates [Result][T] from a value of T, where T implements [comparable]
 func OK[T comparable](v T) Result[T] { return ok(Some(v)) }
