@@ -17,4 +17,9 @@ tag-push SEMVER:
 	git tag {{SEMVER}}
 	git push origin {{SEMVER}}
 
-release SEMVER: test (tag-push SEMVER) (upload-coverage-and-fetch SEMVER)
+commit-push SEMVER:
+    git add . ; git commit -m "release: {{SEMVER}}"
+    git tag {{SEMVER}}
+    git push ; git push origin {{SEMVER}}
+
+release SEMVER: test (commit-push SEMVER) (upload-coverage-and-fetch SEMVER)
