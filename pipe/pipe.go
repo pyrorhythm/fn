@@ -212,3 +212,5 @@ func FiveWrapPtr[In, inter1, inter2, inter3, Out any](
 		},
 	)
 }
+
+var x = FiveWrap

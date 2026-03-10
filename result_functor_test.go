@@ -24,7 +24,7 @@ func TestTo_Err(t *testing.T) {
 	if r2.OK() {
 		t.Error("To on Err should propagate error")
 	}
-	if r2.Err() != e {
+	if !errors.Is(e, r2.Err()) {
 		t.Error("To should preserve original error")
 	}
 }
@@ -60,7 +60,7 @@ func TestTo_ChainWithError(t *testing.T) {
 	if r3.OK() {
 		t.Error("chained To with error should propagate")
 	}
-	if r3.Err() != e {
+	if !errors.Is(e, r3.Err()) {
 		t.Error("should preserve first error")
 	}
 }
@@ -87,7 +87,7 @@ func TestMorph_Err(t *testing.T) {
 	if r2.OK() {
 		t.Error("Morph on Err should propagate error")
 	}
-	if r2.Err() != e {
+	if !errors.Is(e, r2.Err()) {
 		t.Error("Morph should preserve original error")
 	}
 }
@@ -101,7 +101,7 @@ func TestMorph_FuncReturnsErr(t *testing.T) {
 	if r2.OK() {
 		t.Error("Morph should propagate inner error")
 	}
-	if r2.Err() != e {
+	if !errors.Is(e, r2.Err()) {
 		t.Error("Morph should have inner error")
 	}
 }

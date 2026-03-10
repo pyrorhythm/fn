@@ -121,7 +121,7 @@ func (r Result[T]) Inspect(f func(r Result[T])) {
 	f(r)
 }
 
-// MapResult maps result (LOL) to the result of  the same type by calling provided function.
+// MapResult maps result (LOL) to the result of the same type by calling provided function.
 func (r *Result[T]) MapResult(f func(r Result[T]) Result[T]) {
 	*r = f(*r)
 }
