@@ -1,4 +1,4 @@
-package reactive
+package react
 
 import (
 	"sync"

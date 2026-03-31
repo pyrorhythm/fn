@@ -1,4 +1,4 @@
-package reactive
+package react
 
 // Derive creates a new Prop whose value is computed from a source Observable.
 // The returned Prop updates whenever the source changes, deduplicating equal values.

@@ -1,43 +1,43 @@
-// Package fnres implements the Of monad for Go.
-package fnres
+// Package res implements the Of monad for Go.
+package res
 
 import (
 	"errors"
 	"fmt"
 
 	"github.com/pyrorhythm/fn"
-	"github.com/pyrorhythm/fn/fnopt"
+	"github.com/pyrorhythm/fn/opt"
 )
 
 // Of[T] is either an OK value or an error.
 type Of[T any] struct {
-	v fnopt.Of[T]
+	v opt.Of[T]
 	e error
 }
 
-func ok[T any](r fnopt.Of[T]) Of[T] { return Of[T]{v: r} }
-func okv[T any](r T) Of[T]          { return ok(fnopt.SomeAny(r)) }
-func okp[T any](r *T) Of[T]         { return ok(fnopt.SomeAny(fn.OrZero(r))) }
-func rErr[T any](e error) Of[T]     { return Of[T]{e: e} }
+func ok[T any](r opt.Of[T]) Of[T] { return Of[T]{v: r} }
+func okv[T any](r T) Of[T]        { return ok(opt.SomeAny(r)) }
+func okp[T any](r *T) Of[T]       { return ok(opt.SomeAny(fn.OrZero(r))) }
+func rErr[T any](e error) Of[T]   { return Of[T]{e: e} }
 
 var errNilPtr = errors.New("nil pointer")
 
 // From creates Of[T] from a standard (T, error) return where T is comparable.
-func From[T comparable](val T, err error) Of[T] { return Of[T]{v: fnopt.Some(val), e: err} }
+func From[T comparable](val T, err error) Of[T] { return Of[T]{v: opt.Some(val), e: err} }
 
 // FromPtr creates Of[T] from a standard (*T, error) return.
-func FromPtr[T any](val *T, err error) Of[T] { return Of[T]{v: fnopt.SomePtr(val), e: err} }
+func FromPtr[T any](val *T, err error) Of[T] { return Of[T]{v: opt.SomePtr(val), e: err} }
 
 // FromAny creates Of[T] from a standard (T, error) return, bypassing zero checks.
-func FromAny[T any](val T, err error) Of[T] { return Of[T]{v: fnopt.SomeAny(val), e: err} }
+func FromAny[T any](val T, err error) Of[T] { return Of[T]{v: opt.SomeAny(val), e: err} }
 
 // FromOpt creates Of[T] from an existing option and error.
-func FromOpt[T any](o fnopt.Of[T], err error) Of[T] { return Of[T]{v: o, e: err} }
+func FromOpt[T any](o opt.Of[T], err error) Of[T] { return Of[T]{v: o, e: err} }
 
 // FromAnyReflect creates Of[T] using reflection to determine validity.
 // Prefer [From] or [FromAny] when possible; reflection is 25–50× slower.
 func FromAnyReflect[T any](val T, err error) Of[T] {
-	return Of[T]{v: fnopt.SomeAnyReflect(val), e: err}
+	return Of[T]{v: opt.SomeAnyReflect(val), e: err}
 }
 
 // Err creates Of[T] from an error.
@@ -50,10 +50,10 @@ func Errn[T any](s string) Of[T] { return rErr[T](errors.New(s)) }
 func Errw[T any](e error, s string) Of[T] { return rErr[T](fmt.Errorf("%s: %w", s, e)) }
 
 // OK creates Of[T] from a comparable value. Invalid if value is zero.
-func OK[T comparable](v T) Of[T] { return ok(fnopt.Some(v)) }
+func OK[T comparable](v T) Of[T] { return ok(opt.Some(v)) }
 
 // OKOpt creates Of[T] from an existing option.
-func OKOpt[T any](o fnopt.Of[T]) Of[T] { return ok(o) }
+func OKOpt[T any](o opt.Of[T]) Of[T] { return ok(o) }
 
 // OKPtr creates Of[T] from a pointer. Returns an error if the pointer is nil.
 func OKPtr[T any](v *T) Of[T] {
@@ -68,10 +68,10 @@ func OKAny[T any](v T) Of[T] { return okv(v) }
 
 // OKAnyReflect creates Of[T] using reflection to determine validity.
 // Prefer [OK] or [OKAny] when possible; reflection is 25–50× slower.
-func OKAnyReflect[T any](v T) Of[T] { return ok(fnopt.SomeAnyReflect(v)) }
+func OKAnyReflect[T any](v T) Of[T] { return ok(opt.SomeAnyReflect(v)) }
 
 // Opt returns the underlying Option[T].
-func (r Of[T]) Opt() fnopt.Of[T] { return r.v }
+func (r Of[T]) Opt() opt.Of[T] { return r.v }
 
 // Err returns the underlying error, or nil if OK.
 func (r Of[T]) Err() error { return r.e }

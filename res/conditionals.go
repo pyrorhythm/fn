@@ -1,4 +1,4 @@
-package fnres
+package res
 
 // ErrIf returns Of[T] with the value if cond is true, otherwise wraps the error.
 func ErrIf[T any](cond bool, then T, or error) Of[T] {

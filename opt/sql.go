@@ -1,4 +1,4 @@
-package fnopt
+package opt
 
 import (
 	"database/sql"

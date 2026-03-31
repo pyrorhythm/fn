@@ -1,4 +1,4 @@
-package pipe
+package chain
 
 import (
 	"errors"
@@ -6,11 +6,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pyrorhythm/fn/fnres"
+	"github.com/pyrorhythm/fn/res"
 )
 
 func TestWrap_OK(t *testing.T) {
-	got := Wrap(fnres.OK(42), func(n int) (string, error) { return strconv.Itoa(n), nil })
+	got := Wrap(res.OK(42), func(n int) (string, error) { return strconv.Itoa(n), nil })
 	if !got.OK() || got.Val() != "42" {
 		t.Errorf("Wrap = %v, want OK(\"42\")", got)
 	}
@@ -18,7 +18,7 @@ func TestWrap_OK(t *testing.T) {
 
 func TestWrap_InitialError(t *testing.T) {
 	got := Wrap(
-		fnres.Err[int](errors.New("init")),
+		res.Err[int](errors.New("init")),
 		func(n int) (string, error) { return strconv.Itoa(n), nil },
 	)
 	if got.OK() {
@@ -27,7 +27,7 @@ func TestWrap_InitialError(t *testing.T) {
 }
 
 func TestWrap_FuncError(t *testing.T) {
-	got := Wrap(fnres.OK(-1), func(n int) (string, error) {
+	got := Wrap(res.OK(-1), func(n int) (string, error) {
 		if n < 0 {
 			return "", errors.New("negative")
 		}
@@ -39,7 +39,7 @@ func TestWrap_FuncError(t *testing.T) {
 }
 
 func TestWrap_Chain(t *testing.T) {
-	rInt := Wrap(fnres.OK("42"), strconv.Atoi)
+	rInt := Wrap(res.OK("42"), strconv.Atoi)
 	rFloat := Wrap(rInt, func(n int) (float64, error) { return float64(n) * 1.5, nil })
 	if !rFloat.OK() || rFloat.Val() != 63.0 {
 		t.Errorf("Wrap chain = %v, want OK(63.0)", rFloat)
@@ -47,7 +47,7 @@ func TestWrap_Chain(t *testing.T) {
 }
 
 func TestWrap_ChainShortCircuit(t *testing.T) {
-	rInt := Wrap(fnres.OK("bad"), strconv.Atoi)
+	rInt := Wrap(res.OK("bad"), strconv.Atoi)
 	rFloat := Wrap(rInt, func(n int) (float64, error) { return float64(n), nil })
 	if rFloat.OK() {
 		t.Error("Wrap chain should short-circuit on first error")
@@ -55,7 +55,7 @@ func TestWrap_ChainShortCircuit(t *testing.T) {
 }
 
 func TestWrap_LongChain(t *testing.T) {
-	rStr := Wrap(fnres.OK("  42  "), func(s string) (string, error) { return strings.TrimSpace(s), nil })
+	rStr := Wrap(res.OK("  42  "), func(s string) (string, error) { return strings.TrimSpace(s), nil })
 	rInt := Wrap(rStr, strconv.Atoi)
 	rFloat := Wrap(rInt, func(n int) (float64, error) { return float64(n) * 2.5, nil })
 	rFinal := Wrap(rFloat, func(f float64) (int, error) { return int(f), nil })
@@ -65,19 +65,19 @@ func TestWrap_LongChain(t *testing.T) {
 }
 
 func TestWrap3(t *testing.T) {
-	got := Wrap3(fnres.OK("42"), strconv.Atoi, func(n int) (float64, error) { return float64(n) * 1.5, nil })
+	got := Wrap3(res.OK("42"), strconv.Atoi, func(n int) (float64, error) { return float64(n) * 1.5, nil })
 	if !got.OK() || got.Val() != 63.0 {
 		t.Errorf("Wrap3 = %v, want OK(63.0)", got)
 	}
 
-	got2 := Wrap3(fnres.OK("bad"), strconv.Atoi, func(n int) (float64, error) { return float64(n), nil })
+	got2 := Wrap3(res.OK("bad"), strconv.Atoi, func(n int) (float64, error) { return float64(n), nil })
 	if got2.OK() {
 		t.Error("Wrap3 should short-circuit on first error")
 	}
 }
 
 func TestWrap4(t *testing.T) {
-	got := Wrap4(fnres.OK("42"),
+	got := Wrap4(res.OK("42"),
 		strconv.Atoi,
 		func(n int) (float64, error) { return float64(n), nil },
 		func(f float64) (string, error) { return strconv.FormatFloat(f, 'f', 1, 64), nil },
@@ -88,7 +88,7 @@ func TestWrap4(t *testing.T) {
 }
 
 func TestWrap5(t *testing.T) {
-	got := Wrap5(fnres.OK("  42  "),
+	got := Wrap5(res.OK("  42  "),
 		func(s string) (string, error) { return strings.TrimSpace(s), nil },
 		strconv.Atoi,
 		func(n int) (float64, error) { return float64(n) * 2.5, nil },
@@ -101,7 +101,7 @@ func TestWrap5(t *testing.T) {
 
 func TestWrapPtr_OK(t *testing.T) {
 	v := 42
-	got := WrapPtr(fnres.OK("42"), func(s string) (*int, error) {
+	got := WrapPtr(res.OK("42"), func(s string) (*int, error) {
 		n, err := strconv.Atoi(s)
 		if err != nil {
 			return nil, err
@@ -115,7 +115,7 @@ func TestWrapPtr_OK(t *testing.T) {
 }
 
 func TestWrapPtr_NilReturn(t *testing.T) {
-	got := WrapPtr(fnres.OK("42"), func(s string) (*int, error) {
+	got := WrapPtr(res.OK("42"), func(s string) (*int, error) {
 		return nil, nil
 	})
 	if got.OK() {
@@ -124,7 +124,7 @@ func TestWrapPtr_NilReturn(t *testing.T) {
 }
 
 func TestWrapPtr_FuncError(t *testing.T) {
-	got := WrapPtr(fnres.OK("bad"), func(s string) (*int, error) {
+	got := WrapPtr(res.OK("bad"), func(s string) (*int, error) {
 		n, err := strconv.Atoi(s)
 		if err != nil {
 			return nil, err

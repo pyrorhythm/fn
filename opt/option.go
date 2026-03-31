@@ -1,5 +1,5 @@
-// Package fnopt implements the Of monad for Go.
-package fnopt
+// Package opt implements the Of monad for Go.
+package opt
 
 import "github.com/pyrorhythm/fn"
 

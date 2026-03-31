@@ -1,4 +1,4 @@
-package fnerr
+package errs
 
 import "fmt"
 

@@ -1,4 +1,4 @@
-package fnres
+package res
 
 // To maps Of[T] to Of[U] by applying tf to the value.
 // If the result has an error, tf is not called and the error propagates.

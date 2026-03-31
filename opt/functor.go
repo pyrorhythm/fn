@@ -1,4 +1,4 @@
-package fnopt
+package opt
 
 // To maps Of[T] to Of[U] by applying tf to the value.
 // Returns Nil[U] if the option is invalid.

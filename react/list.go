@@ -1,13 +1,13 @@
-package reactive
+package react
 
 import (
 	"sync"
 )
 
 type List[T any] struct {
-	mu       sync.RWMutex
-	items    []T
-	nextID   uint64
+	mu        sync.RWMutex
+	items     []T
+	nextID    uint64
 	listeners map[uint64]func()
 }
 

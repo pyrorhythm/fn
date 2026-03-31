@@ -1,4 +1,4 @@
-package reactive
+package react
 
 // Observable is the read-only contract shared by Prop, CmpProp, and Derived values.
 type Observable[T any] interface {

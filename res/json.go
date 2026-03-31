@@ -1,11 +1,11 @@
-package fnres
+package res
 
 import (
 	"bytes"
 	"fmt"
 
 	"github.com/bytedance/sonic"
-	"github.com/pyrorhythm/fn/fnopt"
+	"github.com/pyrorhythm/fn/opt"
 )
 
 type jerr struct {
@@ -24,7 +24,7 @@ func (r *Of[T]) UnmarshalJSON(ba []byte) error {
 		}
 	}
 
-	var o fnopt.Of[T]
+	var o opt.Of[T]
 	if err := o.UnmarshalJSON(ba); err != nil {
 		return fmt.Errorf("failed to unmarshal Result[%T]: %w", r.Val(), err)
 	}
