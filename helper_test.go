@@ -28,8 +28,7 @@ func TestValid_Pointer(t *testing.T) {
 	if Valid(p) {
 		t.Error("nil pointer should not be valid")
 	}
-	v := 42
-	if !Valid(&v) {
+	if !Valid(new(42)) {
 		t.Error("non-nil pointer should be valid")
 	}
 }
@@ -133,8 +132,7 @@ func TestValidReflect_IsZeroInterface(t *testing.T) {
 }
 
 func TestOr_NonNil(t *testing.T) {
-	v := 42
-	result := Or(&v, 99)
+	result := Or(new(42), 99)
 	if result != 42 {
 		t.Errorf("expected 42, got %d", result)
 	}
@@ -149,8 +147,7 @@ func TestOr_Nil(t *testing.T) {
 }
 
 func TestOrZero_NonNil(t *testing.T) {
-	v := 42
-	result := OrZero(&v)
+	result := OrZero(new(42))
 	if result != 42 {
 		t.Errorf("expected 42, got %d", result)
 	}

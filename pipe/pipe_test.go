@@ -6,381 +6,132 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pyrorhythm/fn"
+	"github.com/pyrorhythm/fn/fnres"
 )
 
-// Pure pipes — test type transformations
-
-func TestTwo(t *testing.T) {
-	got := Two(42, strconv.Itoa)
-	if got != "42" {
-		t.Errorf("Two = %q, want %q", got, "42")
-	}
-}
-
-func TestThree(t *testing.T) {
-	got := Three(42,
-		strconv.Itoa,
-		func(s string) []byte { return []byte(s) },
-	)
-	if string(got) != "42" {
-		t.Errorf("Three = %v, want []byte(\"42\")", got)
-	}
-}
-
-func TestFour(t *testing.T) {
-	got := Four(42,
-		strconv.Itoa,
-		func(s string) []byte { return []byte(s) },
-		func(b []byte) int { return len(b) },
-	)
-	if got != 2 {
-		t.Errorf("Four = %d, want 2", got)
-	}
-}
-
-func TestFive(t *testing.T) {
-	got := Five(42,
-		strconv.Itoa,
-		func(s string) []byte { return []byte(s) },
-		func(b []byte) int { return len(b) },
-		func(n int) bool { return n > 1 },
-	)
-	if got != true {
-		t.Errorf("Five = %v, want true", got)
-	}
-}
-
-// Error pipes — test type transformations with error handling
-
-func TestTwoErr(t *testing.T) {
-	got, err := TwoErr(fn.OK(42), func(n int) (string, error) { return strconv.Itoa(n), nil })
-	if err != nil || got != "42" {
-		t.Errorf("TwoErr = %q, %v, want \"42\", nil", got, err)
-	}
-
-	_, err = TwoErr(
-		fn.From(42, errors.New("new err")),
-		func(n int) (string, error) { return strconv.Itoa(n), nil },
-	)
-	if err == nil {
-		t.Error("TwoErr should propagate initial error")
-	}
-
-	_, err = TwoErr(fn.OK(-1), func(n int) (string, error) {
-		if n < 0 {
-			return "", errors.New("negative")
-		}
-		return strconv.Itoa(n), nil
-	})
-	if err == nil {
-		t.Error("TwoErr should propagate func error")
-	}
-}
-
-func TestThreeErr(t *testing.T) {
-	got, err := ThreeErr(
-		fn.OK("42"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n) * 1.5, nil },
-	)
-	if err != nil || got != 63.0 {
-		t.Errorf("ThreeErr = %v, %v, want 63.0, nil", got, err)
-	}
-
-	_, err = ThreeErr(
-		fn.OK("bad"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-	)
-	if err == nil {
-		t.Error("ThreeErr should short-circuit on first error")
-	}
-}
-
-func TestFourErr(t *testing.T) {
-	got, err := FourErr(
-		fn.OK("42"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-		func(f float64) (string, error) { return strconv.FormatFloat(f, 'f', 1, 64), nil },
-	)
-	if err != nil || got != "42.0" {
-		t.Errorf("FourErr = %q, %v, want \"42.0\", nil", got, err)
-	}
-
-	_, err = FourErr(fn.OK("42"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return 0, errors.New("fail") },
-		func(f float64) (string, error) { return "", nil },
-	)
-	if err == nil {
-		t.Error("FourErr should short-circuit on middle error")
-	}
-}
-
-func TestFiveErr(t *testing.T) {
-	got, err := FiveErr(fn.OK("     42    "),
-		func(s string) (string, error) { return strings.TrimSpace(s), nil },
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n) * 2.5, nil },
-		func(f float64) (int, error) { return int(f), nil },
-	)
-	if err != nil || got != 105 {
-		t.Errorf("FiveErr = %d, %v, want 105, nil", got, err)
-	}
-}
-
-// Result pipes — test type transformations with Result monad
-
-func TestTwoRes(t *testing.T) {
-	got := TwoRes(
-		fn.OKAny(42),
-		func(n int) fn.Result[string] { return fn.OKAny(strconv.Itoa(n)) },
-	)
+func TestWrap_OK(t *testing.T) {
+	got := Wrap(fnres.OK(42), func(n int) (string, error) { return strconv.Itoa(n), nil })
 	if !got.OK() || got.Val() != "42" {
-		t.Errorf("TwoRes = %v, want OK(\"42\")", got)
-	}
-
-	got = TwoRes(
-		fn.Err[int](errors.New("init")),
-		func(n int) fn.Result[string] { return fn.OKAny(strconv.Itoa(n)) },
-	)
-	if got.OK() {
-		t.Error("TwoRes should propagate initial error")
+		t.Errorf("Wrap = %v, want OK(\"42\")", got)
 	}
 }
 
-func TestThreeRes(t *testing.T) {
-	got := ThreeRes(
-		fn.OKAny("42"),
-		func(s string) fn.Result[int] { return fn.FromAny(strconv.Atoi(s)) },
-		func(n int) fn.Result[float64] { return fn.OKAny(float64(n) * 1.5) },
-	)
-	if !got.OK() || got.Val() != 63.0 {
-		t.Errorf("ThreeRes = %v, want OK(63.0)", got)
-	}
-
-	got = ThreeRes(
-		fn.OKAny("bad"),
-		func(s string) fn.Result[int] { return fn.FromAny(strconv.Atoi(s)) },
-		func(n int) fn.Result[float64] { return fn.OKAny(float64(n)) },
-	)
-	if got.OK() {
-		t.Error("ThreeRes should short-circuit on first error")
-	}
-}
-
-func TestFourRes(t *testing.T) {
-	got := FourRes(
-		fn.OKAny("42"),
-		func(s string) fn.Result[int] { return fn.FromAny(strconv.Atoi(s)) },
-		func(n int) fn.Result[float64] { return fn.OKAny(float64(n)) },
-		func(f float64) fn.Result[string] { return fn.OKAny(strconv.FormatFloat(f, 'f', 1, 64)) },
-	)
-	if !got.OK() || got.Val() != "42.0" {
-		t.Errorf("FourRes = %v, want OK(\"42.0\")", got)
-	}
-}
-
-func TestFiveRes(t *testing.T) {
-	got := FiveRes(
-		fn.OKAny("  42  "),
-		func(s string) fn.Result[string] { return fn.OKAny(strings.TrimSpace(s)) },
-		func(s string) fn.Result[int] { return fn.FromAny(strconv.Atoi(s)) },
-		func(n int) fn.Result[float64] { return fn.OKAny(float64(n) * 2.5) },
-		func(f float64) fn.Result[int] { return fn.OKAny(int(f)) },
-	)
-	if !got.OK() || got.Val() != 105 {
-		t.Errorf("FiveRes = %v, want OK(105)", got)
-	}
-}
-
-// Wrap pipes — test type transformations wrapping (value, error) into Result
-
-func TestTwoWrap(t *testing.T) {
-	// Success case
-	got := TwoWrap(fn.OK(42), func(n int) (string, error) { return strconv.Itoa(n), nil })
-	if !got.OK() || got.Val() != "42" {
-		t.Errorf("TwoWrap = %v, want OK(\"42\")", got)
-	}
-
-	// Initial Result error propagation
-	got = TwoWrap(
-		fn.Err[int](errors.New("init")),
+func TestWrap_InitialError(t *testing.T) {
+	got := Wrap(
+		fnres.Err[int](errors.New("init")),
 		func(n int) (string, error) { return strconv.Itoa(n), nil },
 	)
 	if got.OK() {
-		t.Error("TwoWrap should propagate initial error")
+		t.Error("Wrap should propagate initial error")
 	}
+}
 
-	// Function error wrapping
-	got = TwoWrap(fn.OK(-1), func(n int) (string, error) {
+func TestWrap_FuncError(t *testing.T) {
+	got := Wrap(fnres.OK(-1), func(n int) (string, error) {
 		if n < 0 {
 			return "", errors.New("negative")
 		}
 		return strconv.Itoa(n), nil
 	})
 	if got.OK() {
-		t.Error("TwoWrap should wrap function error into Result")
+		t.Error("Wrap should wrap function error into Result")
 	}
 }
 
-func TestThreeWrap(t *testing.T) {
-	// Success case
-	got := ThreeWrap(
-		fn.OK("42"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n) * 1.5, nil },
-	)
+func TestWrap_Chain(t *testing.T) {
+	rInt := Wrap(fnres.OK("42"), strconv.Atoi)
+	rFloat := Wrap(rInt, func(n int) (float64, error) { return float64(n) * 1.5, nil })
+	if !rFloat.OK() || rFloat.Val() != 63.0 {
+		t.Errorf("Wrap chain = %v, want OK(63.0)", rFloat)
+	}
+}
+
+func TestWrap_ChainShortCircuit(t *testing.T) {
+	rInt := Wrap(fnres.OK("bad"), strconv.Atoi)
+	rFloat := Wrap(rInt, func(n int) (float64, error) { return float64(n), nil })
+	if rFloat.OK() {
+		t.Error("Wrap chain should short-circuit on first error")
+	}
+}
+
+func TestWrap_LongChain(t *testing.T) {
+	rStr := Wrap(fnres.OK("  42  "), func(s string) (string, error) { return strings.TrimSpace(s), nil })
+	rInt := Wrap(rStr, strconv.Atoi)
+	rFloat := Wrap(rInt, func(n int) (float64, error) { return float64(n) * 2.5, nil })
+	rFinal := Wrap(rFloat, func(f float64) (int, error) { return int(f), nil })
+	if !rFinal.OK() || rFinal.Val() != 105 {
+		t.Errorf("Wrap long chain = %v, want OK(105)", rFinal)
+	}
+}
+
+func TestWrap3(t *testing.T) {
+	got := Wrap3(fnres.OK("42"), strconv.Atoi, func(n int) (float64, error) { return float64(n) * 1.5, nil })
 	if !got.OK() || got.Val() != 63.0 {
-		t.Errorf("ThreeWrap = %v, want OK(63.0)", got)
+		t.Errorf("Wrap3 = %v, want OK(63.0)", got)
 	}
 
-	// Initial error propagation
-	got = ThreeWrap(
-		fn.Err[string](errors.New("init")),
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-	)
-	if got.OK() {
-		t.Error("ThreeWrap should propagate initial error")
-	}
-
-	// First function error
-	got = ThreeWrap(
-		fn.OK("bad"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-	)
-	if got.OK() {
-		t.Error("ThreeWrap should short-circuit on first function error")
-	}
-
-	// Second function error
-	got = ThreeWrap(
-		fn.OK("42"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return 0, errors.New("second fail") },
-	)
-	if got.OK() {
-		t.Error("ThreeWrap should wrap second function error")
+	got2 := Wrap3(fnres.OK("bad"), strconv.Atoi, func(n int) (float64, error) { return float64(n), nil })
+	if got2.OK() {
+		t.Error("Wrap3 should short-circuit on first error")
 	}
 }
 
-func TestFourWrap(t *testing.T) {
-	// Success case
-	got := FourWrap(
-		fn.OK("42"),
+func TestWrap4(t *testing.T) {
+	got := Wrap4(fnres.OK("42"),
 		strconv.Atoi,
 		func(n int) (float64, error) { return float64(n), nil },
 		func(f float64) (string, error) { return strconv.FormatFloat(f, 'f', 1, 64), nil },
 	)
 	if !got.OK() || got.Val() != "42.0" {
-		t.Errorf("FourWrap = %v, want OK(\"42.0\")", got)
-	}
-
-	// Initial error propagation
-	got = FourWrap(
-		fn.Err[string](errors.New("init")),
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-		func(f float64) (string, error) { return "", nil },
-	)
-	if got.OK() {
-		t.Error("FourWrap should propagate initial error")
-	}
-
-	// Middle function error
-	got = FourWrap(
-		fn.OK("42"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return 0, errors.New("middle fail") },
-		func(f float64) (string, error) { return "", nil },
-	)
-	if got.OK() {
-		t.Error("FourWrap should short-circuit on middle error")
-	}
-
-	// Last function error
-	got = FourWrap(
-		fn.OK("42"),
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-		func(f float64) (string, error) { return "", errors.New("last fail") },
-	)
-	if got.OK() {
-		t.Error("FourWrap should wrap last function error")
+		t.Errorf("Wrap4 = %v, want OK(\"42.0\")", got)
 	}
 }
 
-func TestFiveWrap(t *testing.T) {
-	// Success case
-	got := FiveWrap(
-		fn.OK("     42    "),
+func TestWrap5(t *testing.T) {
+	got := Wrap5(fnres.OK("  42  "),
 		func(s string) (string, error) { return strings.TrimSpace(s), nil },
 		strconv.Atoi,
 		func(n int) (float64, error) { return float64(n) * 2.5, nil },
 		func(f float64) (int, error) { return int(f), nil },
 	)
 	if !got.OK() || got.Val() != 105 {
-		t.Errorf("FiveWrap = %v, want OK(105)", got)
+		t.Errorf("Wrap5 = %v, want OK(105)", got)
 	}
+}
 
-	// Initial error propagation
-	got = FiveWrap(
-		fn.Err[string](errors.New("init")),
-		func(s string) (string, error) { return strings.TrimSpace(s), nil },
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-		func(f float64) (int, error) { return int(f), nil },
-	)
-	if got.OK() {
-		t.Error("FiveWrap should propagate initial error")
+func TestWrapPtr_OK(t *testing.T) {
+	v := 42
+	got := WrapPtr(fnres.OK("42"), func(s string) (*int, error) {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, err
+		}
+		v = n
+		return &v, nil
+	})
+	if !got.OK() || got.Val() != 42 {
+		t.Errorf("WrapPtr = %v, want OK(42)", got)
 	}
+}
 
-	// Error at each step
-	got = FiveWrap(
-		fn.OK("42"),
-		func(s string) (string, error) { return "", errors.New("step1") },
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-		func(f float64) (int, error) { return int(f), nil },
-	)
+func TestWrapPtr_NilReturn(t *testing.T) {
+	got := WrapPtr(fnres.OK("42"), func(s string) (*int, error) {
+		return nil, nil
+	})
 	if got.OK() {
-		t.Error("FiveWrap should short-circuit on first function error")
+		t.Error("WrapPtr with nil pointer result should not be OK")
 	}
+}
 
-	got = FiveWrap(
-		fn.OK("42"),
-		func(s string) (string, error) { return s, nil },
-		func(s string) (int, error) { return 0, errors.New("step2") },
-		func(n int) (float64, error) { return float64(n), nil },
-		func(f float64) (int, error) { return int(f), nil },
-	)
+func TestWrapPtr_FuncError(t *testing.T) {
+	got := WrapPtr(fnres.OK("bad"), func(s string) (*int, error) {
+		n, err := strconv.Atoi(s)
+		if err != nil {
+			return nil, err
+		}
+		return &n, nil
+	})
 	if got.OK() {
-		t.Error("FiveWrap should short-circuit on second function error")
-	}
-
-	got = FiveWrap(
-		fn.OK("42"),
-		func(s string) (string, error) { return s, nil },
-		strconv.Atoi,
-		func(n int) (float64, error) { return 0, errors.New("step3") },
-		func(f float64) (int, error) { return int(f), nil },
-	)
-	if got.OK() {
-		t.Error("FiveWrap should short-circuit on third function error")
-	}
-
-	got = FiveWrap(
-		fn.OK("42"),
-		func(s string) (string, error) { return s, nil },
-		strconv.Atoi,
-		func(n int) (float64, error) { return float64(n), nil },
-		func(f float64) (int, error) { return 0, errors.New("step4") },
-	)
-	if got.OK() {
-		t.Error("FiveWrap should wrap fourth function error")
+		t.Error("WrapPtr should propagate function error")
 	}
 }

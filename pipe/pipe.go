@@ -1,216 +1,35 @@
-// Package pipe implements Raw, Err and [fn.Result] pipelines
+// Package pipe provides helpers for chaining fallible functions in a [fnres.Of] pipeline.
 package pipe
 
-import "github.com/pyrorhythm/fn"
+import "github.com/pyrorhythm/fn/fnres"
 
-func Two[In, Out any](
-	in In,
-	fin fn.Transformer[In, Out],
-) Out {
-	return fin(in)
-}
-
-func Three[In, inter, Out any](
-	in In,
-	fin fn.Transformer[In, inter],
-	finter fn.Transformer[inter, Out],
-) Out {
-	return finter(Two(in, fin))
-}
-
-func Four[In, inter1, inter2, Out any](
-	in In,
-	fin fn.Transformer[In, inter1],
-	finter1 fn.Transformer[inter1, inter2],
-	finter2 fn.Transformer[inter2, Out],
-) Out {
-	return finter2(Three(in, fin, finter1))
-}
-
-func Five[In, inter1, inter2, inter3, Out any](
-	in In,
-	fin fn.Transformer[In, inter1],
-	finter1 fn.Transformer[inter1, inter2],
-	finter2 fn.Transformer[inter2, inter3],
-	finter3 fn.Transformer[inter3, Out],
-) Out {
-	return finter3(Four(in, fin, finter1, finter2))
-}
-
-func TwoErr[In, Out any](a fn.Result[In], fin func(In) (Out, error)) (z Out, _ error) {
-	if a.Exc() {
-		return z, a.Err()
-	}
-	return fin(a.Val())
-}
-
-func ThreeErr[In, inter, Out any](
-	a fn.Result[In],
-	fin func(In) (inter, error),
-	finter1 func(inter) (Out, error),
-) (z Out, _ error) {
-	b, eb := TwoErr(a, fin)
-	if eb != nil {
-		return z, eb
-	}
-	return finter1(b)
-}
-
-func FourErr[In, inter1, inter2, Out any](
-	a fn.Result[In],
-	fin func(In) (inter1, error),
-	finter1 func(inter1) (inter2, error),
-	finter2 func(inter2) (Out, error),
-) (z Out, _ error) {
-	c, ec := ThreeErr(a, fin, finter1)
-	if ec != nil {
-		return z, ec
-	}
-	return finter2(c)
-}
-
-func FiveErr[In, inter1, inter2, inter3, Out any](
-	a fn.Result[In],
-	fin func(In) (inter1, error),
-	finter1 func(inter1) (inter2, error),
-	finter2 func(inter2) (inter3, error),
-	finter3 func(inter3) (Out, error),
-) (z Out, _ error) {
-	d, ec := FourErr(a, fin, finter1, finter2)
-	if ec != nil {
-		return z, ec
-	}
-	return finter3(d)
-}
-
-func TwoRes[In, Out any](
-	rin fn.Result[In],
-	fin fn.Transformer[In, fn.Result[Out]],
-) fn.Result[Out] {
-	return fn.Morph(rin, func(i In) fn.Result[Out] {
-		return fin(i)
+// Wrap chains a (T, error) function in a Result pipeline.
+// If r has an error, f is not called and the error propagates.
+func Wrap[T, U any](r fnres.Of[T], f func(T) (U, error)) fnres.Of[U] {
+	return fnres.Morph(r, func(v T) fnres.Of[U] {
+		return fnres.FromAny(f(v))
 	})
 }
 
-func ThreeRes[In, inter, Out any](
-	rin fn.Result[In],
-	fin fn.Transformer[In, fn.Result[inter]],
-	finter1 fn.Transformer[inter, fn.Result[Out]],
-) fn.Result[Out] {
-	return fn.Morph(TwoRes(rin, fin), func(i inter) fn.Result[Out] {
-		return finter1(i)
+// WrapPtr chains a (*T, error) function in a Result pipeline.
+// If r has an error, f is not called and the error propagates.
+func WrapPtr[T, U any](r fnres.Of[T], f func(T) (*U, error)) fnres.Of[U] {
+	return fnres.Morph(r, func(v T) fnres.Of[U] {
+		return fnres.FromPtr(f(v))
 	})
 }
 
-func FourRes[In, inter1, inter2, Out any](
-	rin fn.Result[In],
-	fin fn.Transformer[In, fn.Result[inter1]],
-	finter1 fn.Transformer[inter1, fn.Result[inter2]],
-	finter2 fn.Transformer[inter2, fn.Result[Out]],
-) fn.Result[Out] {
-	return fn.Morph(ThreeRes(rin, fin, finter1), func(i2 inter2) fn.Result[Out] {
-		return finter2(i2)
-	})
+// Wrap3 composes two (T, error) steps in one call.
+func Wrap3[In, M, Out any](r fnres.Of[In], f1 func(In) (M, error), f2 func(M) (Out, error)) fnres.Of[Out] {
+	return Wrap(Wrap(r, f1), f2)
 }
 
-func FiveRes[In, inter1, inter2, inter3, Out any](
-	ra fn.Result[In],
-	fin fn.Transformer[In, fn.Result[inter1]],
-	finter1 fn.Transformer[inter1, fn.Result[inter2]],
-	finter2 fn.Transformer[inter2, fn.Result[inter3]],
-	finter3 fn.Transformer[inter3, fn.Result[Out]],
-) fn.Result[Out] {
-	return fn.Morph(FourRes(ra, fin, finter1, finter2), func(i3 inter3) fn.Result[Out] {
-		return finter3(i3)
-	})
+// Wrap4 composes three (T, error) steps in one call.
+func Wrap4[In, M1, M2, Out any](r fnres.Of[In], f1 func(In) (M1, error), f2 func(M1) (M2, error), f3 func(M2) (Out, error)) fnres.Of[Out] {
+	return Wrap(Wrap3(r, f1, f2), f3)
 }
 
-func TwoWrap[In, Out any](
-	in fn.Result[In],
-	fin func(In) (Out, error),
-) fn.Result[Out] {
-	return fn.Morph(in, func(i In) fn.Result[Out] {
-		return fn.FromAny(fin(i))
-	})
+// Wrap5 composes four (T, error) steps in one call.
+func Wrap5[In, M1, M2, M3, Out any](r fnres.Of[In], f1 func(In) (M1, error), f2 func(M1) (M2, error), f3 func(M2) (M3, error), f4 func(M3) (Out, error)) fnres.Of[Out] {
+	return Wrap(Wrap4(r, f1, f2, f3), f4)
 }
-
-func ThreeWrap[In, inter, Out any](
-	in fn.Result[In],
-	fin func(In) (inter, error),
-	finter1 func(inter) (Out, error),
-) fn.Result[Out] {
-	return fn.Morph(TwoWrap(in, fin), func(i inter) fn.Result[Out] {
-		return fn.FromAny(finter1(i))
-	})
-}
-
-func FourWrap[In, inter1, inter2, Out any](
-	in fn.Result[In],
-	fin func(In) (inter1, error),
-	finter1 func(inter1) (inter2, error),
-	finter2 func(inter2) (Out, error),
-) fn.Result[Out] {
-	return fn.Morph(ThreeWrap(in, fin, finter1), func(i2 inter2) fn.Result[Out] {
-		return fn.FromAny(finter2(i2))
-	})
-}
-
-func FiveWrap[In, inter1, inter2, inter3, Out any](
-	in fn.Result[In],
-	fin func(In) (inter1, error),
-	finter1 func(inter1) (inter2, error),
-	finter2 func(inter2) (inter3, error),
-	finter3 func(inter3) (Out, error),
-) fn.Result[Out] {
-	return fn.Morph(FourWrap(in, fin, finter1, finter2),
-		func(i3 inter3) fn.Result[Out] {
-			return fn.FromAny(finter3(i3))
-		},
-	)
-}
-
-func TwoWrapPtr[In, Out any](
-	in fn.Result[In],
-	fin func(In) (*Out, error),
-) fn.Result[Out] {
-	return fn.Morph(in, func(i In) fn.Result[Out] {
-		return fn.FromPtr(fin(i))
-	})
-}
-
-func ThreeWrapPtr[In, inter, Out any](
-	in fn.Result[In],
-	fin func(In) (inter, error),
-	finter1 func(inter) (*Out, error),
-) fn.Result[Out] {
-	return fn.Morph(TwoWrap(in, fin), func(i inter) fn.Result[Out] {
-		return fn.FromPtr(finter1(i))
-	})
-}
-
-func FourWrapPtr[In, inter1, inter2, Out any](
-	in fn.Result[In],
-	fin func(In) (inter1, error),
-	finter1 func(inter1) (inter2, error),
-	finter2 func(inter2) (*Out, error),
-) fn.Result[Out] {
-	return fn.Morph(ThreeWrap(in, fin, finter1), func(i2 inter2) fn.Result[Out] {
-		return fn.FromPtr(finter2(i2))
-	})
-}
-
-func FiveWrapPtr[In, inter1, inter2, inter3, Out any](
-	in fn.Result[In],
-	fin func(In) (inter1, error),
-	finter1 func(inter1) (inter2, error),
-	finter2 func(inter2) (inter3, error),
-	finter3 func(inter3) (*Out, error),
-) fn.Result[Out] {
-	return fn.Morph(FourWrap(in, fin, finter1, finter2),
-		func(i3 inter3) fn.Result[Out] {
-			return fn.FromPtr(finter3(i3))
-		},
-	)
-}
-
-var x = FiveWrap

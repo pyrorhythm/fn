@@ -1,4 +1,4 @@
-package fn
+package fnopt
 
 import (
 	"database/sql"
@@ -12,9 +12,9 @@ import (
 )
 
 var (
-	_ sql.Scanner   = (*Option[int])(nil)
-	_ driver.Valuer = (*Option[int])(nil)
-	_ driver.Valuer = Option[int]{}
+	_ sql.Scanner   = (*Of[int])(nil)
+	_ driver.Valuer = (*Of[int])(nil)
+	_ driver.Valuer = Of[int]{}
 )
 
 var (
@@ -24,9 +24,7 @@ var (
 	ErrScanUnsupported      = errors.New("unsupported target type")
 )
 
-// ScanError implements error happend while scanning.
-//
-// Possible causes are: [ErrScanOverflow], [ErrScanNegativeUnsigned], [ErrScanType], [ErrScanUnsupported]
+// ScanError describes an error that occurred while scanning a SQL value.
 type ScanError struct {
 	Src    any
 	Target string
@@ -37,28 +35,15 @@ func (e *ScanError) Error() string {
 	return fmt.Sprintf("cannot scan %T into %s: %v", e.Src, e.Target, e.Cause)
 }
 
-func (e *ScanError) Unwrap() error {
-	return e.Cause
-}
+func (e *ScanError) Unwrap() error { return e.Cause }
 
 func scanErr[T any](src any, cause error) error {
 	var zero T
-	return &ScanError{
-		Src:    src,
-		Target: fmt.Sprintf("%T", zero),
-		Cause:  cause,
-	}
+	return &ScanError{Src: src, Target: fmt.Sprintf("%T", zero), Cause: cause}
 }
 
-// Scan implements the [sql.Scanner] interface for [Option][T].
-//
-//   - If src is nil, the [Option] is set as [Nil][T] (SQL NULL).
-//   - If T implements [sql.Scanner], its [sql.Scanner.Scan] method is used.
-//   - If src can be directly assigned to T, it is assigned as-is.
-//   - Otherwise, common database type conversions are attempted (e.g., int64 → int, []byte → string).
-//
-// Returns a [*ScanError] if the value cannot be converted to T.
-func (o *Option[T]) Scan(src any) error {
+// Scan implements [sql.Scanner] for Of[T].
+func (o *Of[T]) Scan(src any) error {
 	var (
 		val T
 		ok  bool
@@ -82,26 +67,18 @@ func (o *Option[T]) Scan(src any) error {
 		return nil
 	}
 
-	opt, err := convertTo[T](src)
+	result, err := convertTo[T](src)
 	if err != nil {
 		*o = Nil[T]()
 		return err
 	}
-
-	*o = opt
+	*o = result
 	return nil
 }
 
-// Value implements the [driver.Valuer] interface for [Option][T].
-//
-//   - If the option is [Nil][T], returns nil.
-//   - If T implements [driver.Valuer], its Value method is used.
-//   - If the underlying value is already a valid [driver.Value] type, it is returned directly.
-//   - Otherwise, (kinda) safe conversions are applied (int → int64, uint → int64, float32 → float64).
-//
-// Returns an error if the value cannot be converted to a driver.Value.
-func (o Option[T]) Value() (driver.Value, error) {
-	if !o.Valid() {
+// Value implements [driver.Valuer] for Of[T].
+func (o Of[T]) Value() (driver.Value, error) {
+	if !o.v {
 		return nil, nil
 	}
 
@@ -121,18 +98,11 @@ func (o Option[T]) Value() (driver.Value, error) {
 	return nil, fmt.Errorf("Option.Value: unsupported type %T", o.t)
 }
 
-// convertTo attempts to safely convert a source value from database/sql
-// into type T, supporting common database types.
-//
-// Each case matches the exact target type T and performs bounded conversion.
-// Returns (Some(converted), nil) on success, (Nil[T](), error) on failure.
-func convertTo[T any](src any) (Option[T], error) {
+func convertTo[T any](src any) (Of[T], error) {
 	var result T
 	var err error
 
 	switch tz := any(&result).(type) {
-
-	//
 	case *int:
 		err = likeSigned(src, tz)
 	case *int8:
@@ -143,8 +113,6 @@ func convertTo[T any](src any) (Option[T], error) {
 		err = likeSigned(src, tz)
 	case *int64:
 		err = likeSigned(src, tz)
-
-	//
 	case *uint:
 		err = likeUnsigned(src, tz)
 	case *uint8:
@@ -157,33 +125,22 @@ func convertTo[T any](src any) (Option[T], error) {
 		err = likeUnsigned(src, tz)
 	case *uintptr:
 		err = likeUnsigned(src, tz)
-
-	//
 	case *float32:
 		err = likeFloat(src, tz)
 	case *float64:
 		err = likeFloat(src, tz)
-
-	//
 	case *string:
 		err = likeString(src, tz)
 	case *[]byte:
 		err = likeByteSlice(src, tz)
 	case *[]rune:
 		err = likeRuneSlice(src, tz)
-
-	//
 	case *bool:
 		err = likeBool(src, tz)
-
-	//
 	case *time.Time:
 		err = likeTime(src, tz)
-
-	//
 	case *time.Duration:
 		err = likeDuration(src, tz)
-
 	default:
 		return Nil[T](), scanErr[T](src, ErrScanUnsupported)
 	}
@@ -197,12 +154,10 @@ func convertTo[T any](src any) (Option[T], error) {
 func likeSigned[S constraints.Signed](src any, dst *S) error {
 	serr := scanErr[S]
 	ovfErr := serr(src, ErrScanOverflow)
-
 	i, ok := src.(int64)
 	if !ok {
 		return serr(src, ErrScanType)
 	}
-
 	switch p := any(dst).(type) {
 	case *int:
 		if i < math.MinInt || i > math.MaxInt {
@@ -233,15 +188,12 @@ func likeSigned[S constraints.Signed](src any, dst *S) error {
 func likeUnsigned[U constraints.Unsigned](src any, dst *U) error {
 	serr := scanErr[U]
 	ovfErr := serr(src, ErrScanOverflow)
-
 	i, ok := src.(int64)
-
 	if !ok {
 		return serr(src, ErrScanType)
 	} else if i < 0 {
 		return serr(src, ErrScanNegativeUnsigned)
 	}
-
 	switch p := any(dst).(type) {
 	case *uint:
 		if uint64(i) > math.MaxUint {
@@ -393,8 +345,8 @@ func likeTime(src any, dst *time.Time) error {
 
 func parseTimeString(s string, src any, dst *time.Time) error {
 	for _, layout := range []string{
-		time.RFC3339,  // tstz
-		time.DateTime, // ts
+		time.RFC3339,
+		time.DateTime,
 		time.RFC3339Nano,
 		"2006-01-02 15:04:05.999999999",
 		"2006-01-02",
@@ -407,23 +359,8 @@ func parseTimeString(s string, src any, dst *time.Time) error {
 	return scanErr[time.Time](src, ErrScanType)
 }
 
-// valueOf safely converts primitive Go types to a value
-// compatible with database/sql driver.Value.
-//
-// Supported conversions:
-//   - int, int8, int16, int32 → int64
-//   - uint, uint8, uint16, uint32 → int64
-//   - uint64 → int64 (only if <= math.MaxInt64)
-//   - uintptr → int64 (only if <= math.MaxInt64)
-//   - float32 → float64
-//   - time.Duration → int64 (nanoseconds)
-//   - []rune → string
-//
-// Returns the converted value and nil on success, otherwise nil and an error.
 func valueOf(val any) (driver.Value, error) {
 	switch v := val.(type) {
-
-	//
 	case int:
 		return int64(v), nil
 	case int8:
@@ -434,8 +371,6 @@ func valueOf(val any) (driver.Value, error) {
 		return int64(v), nil
 	case int64:
 		return v, nil
-
-	//
 	case uint:
 		return int64(v), nil
 	case uint8:
@@ -454,21 +389,14 @@ func valueOf(val any) (driver.Value, error) {
 			return nil, fmt.Errorf("uintptr %d overflows int64", v)
 		}
 		return int64(v), nil
-
-	//
 	case float32:
 		return float64(v), nil
 	case float64:
 		return float64(v), nil
-
-	//
 	case time.Duration:
 		return int64(v), nil
-
-	//
 	case []rune:
 		return string(v), nil
 	}
-
 	return nil, fmt.Errorf("unsupported type %T", val)
 }
