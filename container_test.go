@@ -42,16 +42,16 @@ func TestFold(t *testing.T) {
 	onNil := func() string { return "empty" }
 	onVal := func(n int) string { return "got value" }
 
-	if got := fn.Fold(opt.Some(42), onNil, onVal); got != "got value" {
-		t.Errorf("Fold(Some(42)) = %q, want \"got value\"", got)
+	if got := fn.Match(opt.Some(42), onNil, onVal); got != "got value" {
+		t.Errorf("Match(Some(42)) = %q, want \"got value\"", got)
 	}
-	if got := fn.Fold(opt.Nil[int](), onNil, onVal); got != "empty" {
-		t.Errorf("Fold(Nil()) = %q, want \"empty\"", got)
+	if got := fn.Match(opt.Nil[int](), onNil, onVal); got != "empty" {
+		t.Errorf("Match(Nil()) = %q, want \"empty\"", got)
 	}
-	if got := fn.Fold(res.OK(42), onNil, onVal); got != "got value" {
-		t.Errorf("Fold(OK(42)) = %q, want \"got value\"", got)
+	if got := fn.Match(res.OK(42), onNil, onVal); got != "got value" {
+		t.Errorf("Match(OK(42)) = %q, want \"got value\"", got)
 	}
-	if got := fn.Fold(res.Err[int](nil), onNil, onVal); got != "empty" {
-		t.Errorf("Fold(Err()) = %q, want \"empty\"", got)
+	if got := fn.Match(res.Err[int](nil), onNil, onVal); got != "empty" {
+		t.Errorf("Match(Err()) = %q, want \"empty\"", got)
 	}
 }

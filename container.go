@@ -16,8 +16,8 @@ func Must[T any, M Container[T]](m M) T {
 	return m.Val()
 }
 
-// Fold pattern matches over a container, calling onNil if invalid, onVal if valid.
-func Fold[T, U any, M Container[T]](m M, onNil func() U, onVal func(T) U) U {
+// Match pattern matches over a container, calling onNil if invalid, onVal if valid.
+func Match[T, U any, M Container[T]](m M, onNil func() U, onVal func(T) U) U {
 	if m.Valid() {
 		return onVal(m.Val())
 	}

@@ -86,3 +86,65 @@ func OrDef[T comparable](def T, values ...T) T {
 
 	return def
 }
+
+func Map[T any, U any](s []T, f func(T) U) []U {
+	res := make([]U, len(s))
+	for i, item := range s {
+		res[i] = f(item)
+	}
+	return res
+}
+
+func Reduce[T any, U any](s []T, f func(U, T) U, init ...U) U {
+	var res U
+	if len(init) > 0 {
+		res = init[0]
+	}
+	for _, item := range s {
+		res = f(res, item)
+	}
+	return res
+}
+
+func Filter[T any](s []T, f func(T) bool) []T {
+	res := make([]T, 0, len(s))
+	for _, item := range s {
+		if f(item) {
+			res = append(res, item)
+		}
+	}
+	return res
+}
+
+func Find[T any](s []T, f func(T) bool) (T, bool) {
+	for _, item := range s {
+		if f(item) {
+			return item, true
+		}
+	}
+	var z T
+	return z, false
+}
+
+func MapErr[T any, U any](s []T, f func(T) (U, error)) ([]U, error) {
+	res := make([]U, len(s))
+	for i, item := range s {
+		var err error
+		res[i], err = f(item)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func MapOk[T any, U any](s []T, f func(T) (U, bool)) []U {
+	res := make([]U, 0, len(s))
+	for _, item := range s {
+		u, ok := f(item)
+		if ok {
+			res = append(res, u)
+		}
+	}
+	return res
+}
