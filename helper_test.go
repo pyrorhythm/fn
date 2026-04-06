@@ -131,40 +131,17 @@ func TestValidReflect_IsZeroInterface(t *testing.T) {
 	}
 }
 
-func TestOr_NonNil(t *testing.T) {
-	result := Or(new(42), 99)
+func TestSafeDeref_NonNil(t *testing.T) {
+	result := Deref(new(42), 99)
 	if result != 42 {
 		t.Errorf("expected 42, got %d", result)
 	}
 }
 
-func TestOr_Nil(t *testing.T) {
+func TestSafeDeref_Nil(t *testing.T) {
 	var p *int
-	result := Or(p, 99)
+	result := Deref(p, 99)
 	if result != 99 {
 		t.Errorf("expected 99, got %d", result)
-	}
-}
-
-func TestOrZero_NonNil(t *testing.T) {
-	result := OrZero(new(42))
-	if result != 42 {
-		t.Errorf("expected 42, got %d", result)
-	}
-}
-
-func TestOrZero_Nil(t *testing.T) {
-	var p *int
-	result := OrZero(p)
-	if result != 0 {
-		t.Errorf("expected 0, got %d", result)
-	}
-}
-
-func TestOrZero_String(t *testing.T) {
-	var p *string
-	result := OrZero(p)
-	if result != "" {
-		t.Errorf("expected empty string, got %q", result)
 	}
 }

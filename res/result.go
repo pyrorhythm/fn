@@ -17,7 +17,7 @@ type Of[T any] struct {
 
 func ok[T any](r opt.Of[T]) Of[T] { return Of[T]{v: r} }
 func okv[T any](r T) Of[T]        { return ok(opt.SomeAny(r)) }
-func okp[T any](r *T) Of[T]       { return ok(opt.SomeAny(fn.OrZero(r))) }
+func okp[T any](r *T) Of[T]       { return ok(opt.SomeAny(fn.Deref(r))) }
 func rErr[T any](e error) Of[T]   { return Of[T]{e: e} }
 
 var errNilPtr = errors.New("nil pointer")

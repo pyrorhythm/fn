@@ -42,36 +42,47 @@ func reflectValue(vp any) bool {
 	}
 }
 
-// Or returns first pointer as a value if pointer is not nil.
-//
+// Deref safely dereferences p and returns the value.
+// If p == nil, returns **first** passed value in variadic chain.
+// If no additional values passed, returns zero value.
 // Else returns fallback T value, which was passed as a second argument.
-func Or[T any](p *T, v T) T {
+func Deref[T any](p *T, v ...T) (z T) {
 	if p != nil {
 		return *p
 	}
-
-	return v
+	if len(v) > 0 {
+		return v[0]
+	}
+	return z
 }
 
-// OrZero validates pointer and returns pointer as a value if pointer is not nil.
-//
-// Else returns zero T value.
-func OrZero[T any](p *T) T {
-	return Or(p, *new(T))
-}
-
-func Is[T any](v any) bool {
-	_, ok := v.(T)
-	return ok
-}
-
-func Cast[T any](v any) T {
+// Cast tries to cast v to type T, if failes - returns zero value.
+func Cast[T any](v any) (z T) {
 	t, ok := v.(T)
 	if !ok {
-		return Z[T]()
+		return z
 	}
 	return t
 }
 
-// Z ...wait... OH! It's Zero Value!
-func Z[T any]() T { return *new(T) }
+// Or returns first non-zero value, or zero if all passed values are zero.
+func Or[T comparable](values ...T) (z T) {
+	for _, v := range values {
+		if Valid(v) {
+			return v
+		}
+	}
+
+	return z
+}
+
+// OrDef returns first non-zero value, or default if all passed values are zero.
+func OrDef[T comparable](def T, values ...T) T {
+	for _, v := range values {
+		if Valid(v) {
+			return v
+		}
+	}
+
+	return def
+}

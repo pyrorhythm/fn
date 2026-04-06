@@ -22,11 +22,12 @@ type Prop[T any] struct {
 
 // NewProp creates a Prop for comparable types, using == for equality.
 func NewProp[T comparable](initial T) *Prop[T] {
-	return &Prop[T]{
-		value:     initial,
-		eq:        func(a, b T) bool { return a == b },
-		listeners: make(map[uint64]func(T)),
-	}
+	return NewPropEq(initial, func(a, b T) bool { return a == b })
+}
+
+// NewPropWithListeners creates a Prop for comparable types with predefined listeners
+func NewPropWithListeners[T comparable](initial T, listeners ...func(T)) *Prop[T] {
+	return NewPropEqWithListeners(initial, func(a, b T) bool { return a == b }, listeners...)
 }
 
 // NewPropEq creates a Prop for any type with a custom equality function.
@@ -36,6 +37,22 @@ func NewPropEq[T any](initial T, eq func(T, T) bool) *Prop[T] {
 		eq:        eq,
 		listeners: make(map[uint64]func(T)),
 	}
+}
+
+// NewPropEqWithListeners creates a Prop for any type
+// with a custom equality function, including predefined listeners
+func NewPropEqWithListeners[T any](initial T, eq func(T, T) bool, listeners ...func(T)) *Prop[T] {
+	p := &Prop[T]{
+		value:     initial,
+		eq:        eq,
+		listeners: make(map[uint64]func(T)),
+	}
+
+	for _, l := range listeners {
+		p.listeners[nextID()] = l
+	}
+
+	return p
 }
 
 func (p *Prop[T]) Get() T {

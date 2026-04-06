@@ -16,7 +16,7 @@ func some[T any](t T) Of[T]        { return opt(t, true) }
 func Some[T comparable](t T) Of[T] { return opt(t, fn.Valid(t)) }
 
 // SomePtr returns Of[T] from a pointer. Valid if and only if the pointer is non-nil.
-func SomePtr[T any](t *T) Of[T] { return opt(fn.OrZero(t), t != nil) }
+func SomePtr[T any](t *T) Of[T] { return opt(fn.Deref(t), t != nil) }
 
 // SomeAny returns an always-valid Of[T], bypassing the zero check.
 func SomeAny[T any](t T) Of[T] { return some(t) }
