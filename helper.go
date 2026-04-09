@@ -1,6 +1,9 @@
 package fn
 
-import "reflect"
+import (
+	"cmp"
+	"reflect"
+)
 
 // Valid returns whether T is non-zero, where T implements [comparable]
 func Valid[T comparable](v T) bool {
@@ -147,4 +150,35 @@ func MapOk[T any, U any](s []T, f func(T) (U, bool)) []U {
 		}
 	}
 	return res
+}
+
+func MapValid[T any, U any](s []*T, f func(T) U) []U {
+	res := make([]U, 0, len(s))
+	for _, item := range s {
+		if item == nil {
+			continue
+		}
+		res = append(res, f(*item))
+	}
+	return res
+}
+
+func Clamp[T cmp.Ordered](val, lower, upper T) T {
+	if val > upper {
+		return upper
+	} else if val < lower {
+		return lower
+	}
+
+	return val
+}
+
+func ClampToDefault[T cmp.Ordered](val, lower, upper, def T) T {
+	if val > upper {
+		return def
+	} else if val < lower {
+		return def
+	}
+
+	return val
 }
