@@ -152,6 +152,18 @@ func MapOk[T any, U any](s []T, f func(T) (U, bool)) []U {
 	return res
 }
 
+func MapOmit[T any, U any](s []T, f func(T) (U, error)) []U {
+	res := make([]U, 0, len(s)/2)
+	for _, item := range s {
+		v, err := f(item)
+		if err != nil {
+			continue
+		}
+		res = append(res, v)
+	}
+	return res
+}
+
 func MapValid[T any, U any](s []*T, f func(T) U) []U {
 	res := make([]U, 0, len(s))
 	for _, item := range s {
