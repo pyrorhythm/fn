@@ -182,3 +182,9 @@ func ClampToDefault[T cmp.Ordered](val, lower, upper, def T) T {
 
 	return val
 }
+
+func ForEach[T any](s []T, f func(T)) {
+	for _, item := range s {
+		f(item)
+	}
+}
