@@ -200,3 +200,9 @@ func ForEach[T any](s []T, f func(T)) {
 		f(item)
 	}
 }
+
+func Apply[T any](v *T, fns ...func(*T)) {
+	for _, f := range fns {
+		f(v)
+	}
+}
