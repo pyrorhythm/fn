@@ -1,7 +1,7 @@
 // Package chain provides helpers for chaining fallible functions in a [res.Of] pipeline.
 package chain
 
-import "github.com/pyrorhythm/fn/res"
+import "pyrorhythm.dev/fn/res"
 
 // Wrap chains a (T, error) function in a Result pipeline.
 // If r has an error, f is not called and the error propagates.

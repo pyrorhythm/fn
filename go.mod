@@ -1,4 +1,4 @@
-module github.com/pyrorhythm/fn
+module pyrorhythm.dev/fn
 
 go 1.26
 

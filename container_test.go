@@ -3,9 +3,9 @@ package fn_test
 import (
 	"testing"
 
-	"github.com/pyrorhythm/fn"
-	"github.com/pyrorhythm/fn/opt"
-	"github.com/pyrorhythm/fn/res"
+	"pyrorhythm.dev/fn"
+	"pyrorhythm.dev/fn/opt"
+	"pyrorhythm.dev/fn/res"
 )
 
 func TestElse(t *testing.T) {

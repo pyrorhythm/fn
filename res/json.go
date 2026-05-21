@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/goccy/go-json"
-	"github.com/pyrorhythm/fn/opt"
+	"pyrorhythm.dev/fn/opt"
 )
 
 type jerr struct {

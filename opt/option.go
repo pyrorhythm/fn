@@ -1,9 +1,9 @@
 // Package opt implements the Of monad for Go.
 package opt
 
-import "github.com/pyrorhythm/fn"
+import "pyrorhythm.dev/fn"
 
-// Of[T] is either a present value (Some) or absent (Nil).
+// Of is either a present value (Some) or absent (Nil).
 type Of[T any] struct {
 	t T
 	v bool

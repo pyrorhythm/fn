@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/pyrorhythm/fn"
-	"github.com/pyrorhythm/fn/opt"
+	"pyrorhythm.dev/fn"
+	"pyrorhythm.dev/fn/opt"
 )
 
 // Of[T] is either an OK value or an error.

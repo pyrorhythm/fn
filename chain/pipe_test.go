@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/pyrorhythm/fn/res"
+	"pyrorhythm.dev/fn/res"
 )
 
 func TestWrap_OK(t *testing.T) {

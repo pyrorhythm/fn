@@ -3,7 +3,7 @@ package fn_test
 import (
 	"testing"
 
-	"github.com/pyrorhythm/fn"
+	"pyrorhythm.dev/fn"
 )
 
 func TestIf_True(t *testing.T) {
